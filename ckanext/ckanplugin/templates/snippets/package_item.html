@@ -1,0 +1,16 @@
+{% ckan_extends %}
+
+{% block resources_inner%}
+    {{ super() }}
+    <li>
+        <div class="card-footer card-footer-dataset">
+            <div class="card-text card-text-dataset-contador">            
+            {% set contadores = h.obtener_contador_package(package.id) %}    
+                {% for contador in contadores %}
+                {% snippet 'snippets/contador_item.html', contador=contador , position=loop.index, show_capacity=show_capacity%}
+                {% endfor %}
+            </div> 
+        </div>
+    </li>
+{% endblock %}
+

@@ -1,0 +1,52 @@
+{% ckan_extends %}
+
+{% block heading %}
+    {{ super() }}
+    <div class="card card-rating-widget">
+        <div class="header">
+            <h3>Califica este Conjunto</h3>
+        </div>
+
+        <div class="body">
+            <div id="rating-widget"
+                data-module="resource-rating"
+                data-resource-id="{{ pkg.id }}">
+
+            <div class="average-rating">
+                <strong>Calificación:</strong>
+                <span id="avg-stars" class="stars">
+                <span class="star fas fa-star filled" data-value="1"></span>
+                <span class="star fas fa-star filled" data-value="2"></span>
+                <span class="star fas fa-star filled" data-value="3"></span>
+                <span class="star fas fa-star filled" data-value="4"></span>
+                <span class="star fas fa-star filled" data-value="5"></span></span>
+                (<span id="avg-score">0.0</span>)
+            </div>
+
+            <div class="row">
+                <div class="col">
+                <div class="md-3">
+                    <div class="user-rating">
+                    <strong>Tu calificación:</strong>
+                    <span id="user-stars" class="stars">
+                    <span class="star far fa-star" data-value="1"></span>
+                    <span class="star far fa-star" data-value="2"></span>
+                    <span class="star far fa-star" data-value="3"></span>
+                    <span class="star far fa-star" data-value="4"></span>
+                    <span class="star far fa-star" data-value="5"></span></span>
+                    </div>
+                </div>
+                </div>
+            </div>
+
+            <div class="row mt-2">
+                <div class="col">
+                <small id="user-label">(sin calificación)</small>
+                </div>
+            </div>
+
+            </div>
+        </div>
+    </div>
+
+{% endblock %}

@@ -1,0 +1,9 @@
+{% set generals = h.get_featured_general() %}
+
+{% for general in generals %}
+<div class="col-md-4 col-sm-6 mb-3">
+  <div class="py-2 ard-new-css card-dataset-generales box-dataset-generales">
+    {% snippet 'snippets/general_item.html', general=general %}
+  </div>
+</div>
+{% endfor %}

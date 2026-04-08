@@ -1,0 +1,24 @@
+    {% block item %}      
+        {% block item_inner %}
+            {% block vista %}                          
+                    <div class="row text-center align-items-center row_contador">
+                        <div class="col-md-3 col-6 mb-3 col-contador-img">
+                            <img class="img-fluid" src="{{h.url_for_static('/base/images/visualizacion.png')}}" alt="vistas"/>            
+                        </div>
+                        <div class="col-md-3 col-6 mb-3 col-contador-text">
+                            <a class="text-dark ms-2" style="background-color: #ffffff;color:#000000">{{contador.contVistas}} Visitas</a>
+                        </div>
+            {% endblock %}  
+            {% block download %}
+                        <div class="col-md-3 col-6 mb-3 col-contador-img">
+                            <img class="img-fluid"  src="{{h.url_for_static('/base/images/descarga.png')}}" alt="Descargas"/>  
+                        </div>
+                        <div class="col-md-3 col-6 mb-3 col-contador-text">
+                            <a class="text-dark ms-2" style="background-color: #ffffff;color:#000000">{{contador.contDownload}} Descargas</a>
+                        </div>
+                    </div>               
+            
+            {% endblock %}
+        {% endblock %}      
+    {% endblock %}
+ 

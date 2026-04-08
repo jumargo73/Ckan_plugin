@@ -1,0 +1,11 @@
+{% set stats = h.get_site_statistics() %}
+
+
+  <div class="col justify-content-center">
+        
+          <H3 class="h3_stats">DATOS ABIERTOS</H3>
+          <H5 class="h6_stats">"Conecta con los datos,conecta con el territorio"</H5>          
+          {% block search_tematica%}
+            {% snippet 'home/snippets/search_tematica.html', search_facets=search_facets %}
+          {% endblock %}        
+ </div>

@@ -1,0 +1,78 @@
+<footer class="site-footer-information">
+    <div class="container">
+        {% block footer_content_Gobernacion %}
+        <div class="row row_information">
+        <div class="col-md-8 footer-links" >
+            <div class="row">
+            <h1 class="h1_information">Contáctenos</h1>
+            <div class="col-md-6 footer-links">          
+                {% block footer_nav_Gobernacion %}
+                <ul class="list-unstyled">
+                    {% block footer_links1 %}
+                        {% endblock %}
+                </ul>
+                <ul class="list-unstyled">
+                    {% block footer_links1_Gobernacion %}  
+                    <li class="li_information">
+                            <img class="img_information" src="{{h.url_for_static('/base/images/mundo.png')}}" alt="">
+                            <a class="a_information" href="#"> Dirección: Centro Administrativo Municipal (CAM) Avenida 2 Norte #10 - 70. Cali - Valle del Cauca - Colombia.</a>           
+                    </li>     
+                    <li class="li_information">
+                        <img class="img_information"  src="{{h.url_for_static('/base/images/reloj.png')}}" alt="">
+                        <a class="a_information" href="#"> Horario atención: lunes a viernes de 8 am a 12 pm y de 2 pm a 5 pm.</a>
+                    </li>
+                    <li class="li_information">
+                        <img class="img_information" src="{{h.url_for_static('/base/images/reloj.png')}}" alt=""> 
+                        <a class="a_information" href="#/"> Atención al ciudadano</a>
+                    </li>
+                    <li class="li_information">
+                        <img class="img_information" src="{{h.url_for_static('/base/images/libreta.png')}}" alt="">
+                        <a class="a_information" href="#/"> Directorio dependencias</a>
+                    </li>
+                    {% endblock %}
+                </ul>
+                {% endblock %}
+            </div>
+            <div class="col-md-6 footer-links">
+                {% block footer_nav1_Gobernacion %}
+                <ul class="list-unstyled">
+                    {% block footer_links2%}                  
+                    {% endblock %}
+                </ul>
+                <ul class="list-unstyled">
+                    {% block footer_links2_Gobernacion %}                 
+                    <li class="li_information">
+                        <img class="img_information" src="{{h.url_for_static('/base/images/icons-telefono.png')}}" alt="">
+                        <a class="a_information" href="#"> Linea Nacional: 01 8000 222 195</a>
+                    </li>
+                    <li class="li_information">
+                        <img class="img_information" src="{{h.url_for_static('/base/images/icons-telefono.png')}}" alt="">
+                        <a class="a_information" href="#"> Lineas Locales: 195 - (57+2) 887 9020</a>
+                    </li>
+                    <li class="li_information">
+                        <img class="img_information" src="{{h.url_for_static('/base/images/icons-post.png')}}" alt=""> 
+                        <a class="a_information" href="#">Email: contactenos@cali.gov.co</a>
+                    </li>
+                    <li class="li_information">
+                        <img class="img_information" src="{{h.url_for_static('/base/images/icons-post.png')}}" alt="">
+                        <a class="a_information" href="#">Notificaciones Judiciales: notificacionesjudiciales@cali.gov.co</a>
+                    </li>
+                    {% endblock %}
+                </ul>
+                {% endblock %}
+            </div>
+            </div>
+        </div>
+        <div class="col-md-4 attribution">
+            {% block footer_attribution1 %}
+                <div class="mapouter">
+                    <div class="gmap_canvas">
+                        <iframe width="400px" height="120px" id="gmap_canvas" src="https://maps.google.com/maps?q=Edificio+Palacio+de+San+Francisco%2C+carrera%2C+COMUNA+3%2C+Cali%2C+Valle+del+Cauca&t=&z=13&ie=UTF8&iwloc=&output=embed" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" title="map"></iframe>
+                    </div>
+                </div> 
+            {% endblock %}
+        </div>
+           
+        {% endblock %}
+    </div> 
+</footer>

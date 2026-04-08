@@ -1,0 +1,34 @@
+{% block dataset_item %}    
+    {% block dataset_item_header %}
+      <div class="card-header card-header-dataset-general">
+        <div class="card-title card-title-dataset">          
+          {% set title = new.name %}
+          {% block news_item_header_image %}
+          <a class="module-image_dataset-general" href="{{ h.url_for(new.type,id=new.name) }}">
+            <img class="img-fluid" src="{{new.image_display_url}}" alt="{{ new.name }}" />
+          </a>
+          {% endblock %}        
+          {% block dataset_item_header_title %}
+            <h3 class="h3-dataset-general justify-content-center"><a href="{{ h.url_for(new.type, id=new.name) }}">{{new.name }}</a></h3>
+          {% endblock %}
+        </div>
+      </div>
+      <div class="card-body card-body-dataset-general">
+          <div class="card-text card-text-dataset">
+            {% block dataset_item_header_description %}
+            {% if new.description %}
+                <p>{{ h.markdown_extract(new.description, 120)|urlize }}</p>
+            {% endif %}          
+          </div>
+          {% endblock %} 
+      </div>
+      
+      <div class="card-footer card-footer-dataset-general">
+        <div class="card-text card-text-dataset">
+          
+        </div> 
+      </div>
+      
+    {% endblock %}  
+ 
+{% endblock %}

@@ -1,0 +1,6 @@
+{% ckan_extends %}
+
+{% block resource_view %}
+    {{ h.contar_visualizacion(resource['id'],package['id']) }}
+    {{ super() }}
+{% endblock %}

@@ -1,0 +1,9 @@
+{% set datasets = h.get_featured_dataset() %}
+
+{% for dataset in datasets %}
+<div class="col-md-4 col-sm-6 mb-3">
+  <div class="card-dataset box-dataset">
+    {% snippet 'snippets/dataset_item.html', dataset=dataset %}
+  </div>
+</div>  
+{% endfor %}

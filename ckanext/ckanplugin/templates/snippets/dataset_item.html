@@ -1,0 +1,28 @@
+{% block dataset_item %}
+    
+    {% block dataset_item_header %}
+      <div class="card-header card-header-dataset">
+        <div class="card-title card-title-dataset py-2">        
+          {% set title = dataset.name %}        
+          {% block dataset_item_header_title %}
+            <h5 style="margin-top:0.2525rem"><a href="{{ h.url_for(dataset.type ~ '.read', id=dataset.name) }}">{{dataset.title }}</a></h5>
+          {% endblock %}
+      </div>
+      </div>
+      <div class="card-body card-body-dataset">
+          <div class="card-text card-text-dataset">
+            {% block dataset_item_header_description %}
+            {% if dataset.description %}
+                <p>{{ h.markdown_extract(dataset.description, 120)|urlize }}</p>
+            {% endif %}          
+          </div>
+          <div class="card-text card-text-dataset-actualizacion">
+            {% endblock %}
+            {% block dataset_item_header_metadata_modified %}          
+                  <p>Ultima Actualizacion {{ dataset.metadata_modified }}</p>                          
+            {% endblock %}           
+        </div>
+      </div>      
+    {% endblock %}  
+ 
+{% endblock %}

@@ -1,0 +1,11 @@
+csvgeojson.css:
+  output: ckanext-csvgeojson/%(version)s_csvgeojson.css
+  contents:
+    - css/csvgeojson.css
+    - css/resource-rating.css
+
+
+resource-rating.js:
+  output: ckanext-csvgeojson/%(version)s_resource-rating.js
+  contents:
+    - javascript/modules/resource-rating.js

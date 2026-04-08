@@ -1,0 +1,25 @@
+{% block new_item %}
+  <section class="group-list module module-narrow module-shallow">
+    {% block new_item_header %}
+      <header class="module-heading div-new">
+        {% set title = new.title or new.name %}
+        {% block news_item_header_image %}
+          <a class="module-image" href="{{ h.url_for(new.type,id=new.name) }}">
+            <img class="img-card" src="{{new.image_display_url}}" alt="{{ new.name }}" />
+          </a>
+        {% endblock %}
+        {% block new_item_header_title %}
+          <h3 class="media-heading card-title-new"><a href="{{ h.url_for(new.type,id=new.name) }}">{{ new.title or new.name }}</a></h3>
+        {% endblock %}
+        {% block new_item_header_description %}
+          {% if new.description %}
+              <p class="card-description-new">{{ h.markdown_extract(new.description, 120)|urlize }}</p>
+          {% endif %}
+        {% endblock %}
+      </header>
+    {% endblock %}
+    {% block new_item_content %}
+     
+    {% endblock %}
+  </section>
+{% endblock %}

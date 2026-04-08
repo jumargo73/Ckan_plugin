@@ -1,0 +1,28 @@
+{% ckan_extends %}
+
+{% block package_additional_info %}
+ {{ super() }}
+    <tr>
+        <th scope="row" class="dataset-label">{{ _("Frecuencia") }}</th>
+
+        <td class="dataset-details">
+            {{ pkg_dict.update_frequency }}
+        </td>
+    </tr>   
+    <tr>
+        <th scope="row" class="dataset-label">{{ _("Departamento") }}</th>
+
+        <td class="dataset-details">
+            {{ pkg_dict.department }}
+    </td>
+    </tr>
+    <tr>
+        <th scope="row" class="dataset-label">{{ _("Ciudad") }}</th>
+
+        <td class="dataset-details">
+            {{ pkg_dict.city }}
+        </td>
+    </tr>
+
+
+{% endblock %}

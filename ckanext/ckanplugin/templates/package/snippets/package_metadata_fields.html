@@ -1,0 +1,16 @@
+{% ckan_extends %}
+
+{% block package_metadata_fields_custom %}
+    <div class="row">
+        <div class="col">
+         {{ form.input('update_frequency', label=_('Frecuencia'), id='update_frequency', placeholder=_('Freciencia'), value=data.update_frequency, error=update_frequency, classes=['control-medium']) }}  
+        </div>
+        <div class="col">      
+            {{ form.input('department', label=_('Departamento'), id='department', placeholder=_('Departamento'), value=data.department, error=department, classes=['control-medium']) }}                         
+        </div>
+        <div class="col">      
+            {{ form.input('city', label=_('Ciudad'), id='city', placeholder=_('Ciudad'), value=data.city, error=city, classes=['control-medium']) }}        
+        </div>
+    </div>
+{% endblock %}
+

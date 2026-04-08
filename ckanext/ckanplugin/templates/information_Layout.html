@@ -1,0 +1,68 @@
+
+    <footer class="site-footer-information justify-content-center"> 
+        <div class="container" style="width:70%"> 
+            {% block footer_content_Gobernacion %}
+            <div class="row">
+                <h1 class="h1_information">Contáctenos</h1>
+                <div class="col-md-8 footer-links" >                        
+                            {% block footer_nav_Gobernacion %}
+                            <ul class="list-unstyled">
+                                {% block footer_links1 %}
+                                    {% endblock %}
+                            </ul>
+                            <ul class="list-unstyled gap-2">
+                                {% block footer_links1_Gobernacion %} 
+                                
+                                <li class="li_information">
+                                        <img class="img_information p-2" src="{{h.url_for_static('/base/images/mundo.png')}}" alt="">
+                                        <a class="a_information" href="#"><strong>Dirección:</strong> Carrera 6 entre calles 9 y 10, Edificio Palacio de San Francisco. Cali - Valle del Cauca - Colombia.</a>           
+                                </li>     
+                                <li class="li_information">
+                                    <img class="img_information p-2"  src="{{h.url_for_static('/base/images/reloj.png')}}" alt="">
+                                    <a class="a_information" href="#"><strong>Horario atención:</strong> Lunes a jueves: Mañana  7:30 am a 12:30 pm Tarde 1:30 pm a 5:30 pm
+                                        Viernes:  Mañana 7:30 am a 12:30 pm  - Tarde 1:30 pm a 4:30 pm.</a>
+                                </li>
+                                <li class="li_information">
+                                    <img class="img_information p-2" src="{{h.url_for_static('/base/images/reloj.png')}}" alt=""> 
+                                    <a class="a_information" href="#/"> Atención al ciudadano</a>
+                                </li>
+                                <li class="li_information">
+                                    <img class="img_information p-2" src="{{h.url_for_static('/base/images/libreta.png')}}" alt="">
+                                    <a class="a_information" href="#/"> Directorio dependencias</a>
+                                </li>
+                                {% endblock %}
+                            </ul>
+                            {% endblock %}
+                </div>                
+                <div class="col-md-4 footer-links justify-content-center">
+                            {% block footer_nav1_Gobernacion %}
+                            <ul class="list-unstyled">
+                                {% block footer_links2%}                  
+                                {% endblock %}
+                            </ul>
+                            <ul class="list-unstyled gap-2">
+                                {% block footer_links2_Gobernacion %}                 
+                                <li class="li_information">
+                                    <img class="img_information p-2" src="{{h.url_for_static('/base/images/icons-telefono.png')}}" alt="">
+                                    <a class="a_information" href="#"><strong>Linea Nacional:</strong> +57 01-8000972033</a>
+                                </li>
+                                <li class="li_information">
+                                    <img class="img_information p-2" src="{{h.url_for_static('/base/images/icons-telefono.png')}}" alt="">
+                                    <a class="a_information" href="#"><strong>Lineas Locales:</strong> +57 (602) 620 00 00</a>
+                                </li>
+                                <li class="li_information">
+                                    <img class="img_information p-2" src="{{h.url_for_static('/base/images/icons-post.png')}}" alt=""> 
+                                    <a class="a_information" href="#"><strong>Email:</strong> contactenos@valledelcauca.gov.co</a>
+                                </li>
+                                <li class="li_information">
+                                    <img class="img_information p-2" src="{{h.url_for_static('/base/images/icons-post.png')}}" alt="">
+                                    <a class="a_information" href="#"><strong>Notificaciones Judiciales:</strong> notificacionesjudiciales@cali.gov.co</a>
+                                </li>
+                                {% endblock %}
+                            </ul>
+                            {% endblock %}
+                </div>
+            </div>
+            {% endblock %}
+        </div>  
+    </footer>

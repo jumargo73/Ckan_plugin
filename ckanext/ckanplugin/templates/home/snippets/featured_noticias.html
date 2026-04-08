@@ -1,0 +1,9 @@
+{% set news = h.get_featured_noticia() %}
+
+{% for new in news %}
+<div class="col-md-4 col-sm-6 mb-3">
+  <div class="card-dataset-generales box-dataset-generales">
+    {% snippet 'snippets/new_item.html', new=new %}
+  </div>
+</div>  
+{% endfor %}
