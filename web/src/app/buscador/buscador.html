@@ -1,0 +1,74 @@
+<!-- Contenedor principal del componente -->
+<div class="layout-busqueda">
+  
+  <!-- Columna Izquierda: El buscador -->
+  <aside class="sidebar-busqueda">
+	<!-- Input vinculado a la variable 'query' -->
+	  <h3>Explorar Datasets</h3>
+	  <div class="buscador-angular-contenedor">
+	    <i class="fas fa-search search-icon"></i>
+		<input 
+			type="text" 
+			[(ngModel)]="query" 
+			(keyup)="ejecutarBusqueda()" 
+			placeholder="Buscar por título o descripción..."
+			class="mi-input-angular"
+			id="input-angular-test"
+			autocomplete="off"
+		>
+
+	  </div>
+
+	  <!-- Mensaje de estado -->
+		<!-- Feedback inmediato debajo del input -->
+		<p *ngIf="query.length > 0 && query.length < 3" class="text-muted">
+		  Escribe al menos 3 caracteres...
+		</p>
+
+		<div *ngIf="cargando" class="text-info mt-2">
+		  <i class="fas fa-circle-notch fa-spin"></i> Buscando para "<strong>{{ query }}</strong>"...
+		</div>
+  </aside>
+
+  
+   <!-- Columna Derecha: Los resultados -->
+  <main class="resultados-busqueda">
+	  <!-- Lista de resultados -->
+	  <div class="results-container" *ngIf="resultados.length > 0">
+		<hr>
+		<div *ngFor="let ds of resultados" class="dataset-item">
+		  <div class="card" style="margin-bottom: 10px; padding: 10px; border: 1px solid #ddd;">
+			<h4>
+			  <!-- Enlace a la página nativa de CKAN usando el nombre del dataset -->
+			  <a href="/dataset/{{ ds.name }}" target="_blank">{{ ds.title || ds.name }}</a>
+			</h4>
+			<p class="notes">
+			  {{ ds.notes ? (ds.notes | slice:0:150) + '...' : 'Sin descripción disponible.' }}
+			</p>
+			<div class="metadata">
+			  <span class="label label-info">{{ ds.num_resources }} Recursos</span>
+			  <small> | Organización: {{ ds.organization?.title }}</small>
+			</div>
+			<!-- Botón de ir a detalles -->
+			<div class="card-footer-actions">
+			  <a href="/dataset/{{ ds.name }}" target="_blank" class="btn-detalles">
+				Explorar Dataset <span>→</span>
+			  </a>
+			</div>
+		  </div>
+		</div>
+	  </div>
+
+	  <!-- Mensaje si no hay resultados -->
+		<!-- Mensaje de No encontrado: Solo si terminó de cargar y no hay resultados -->
+		<div *ngIf="query.length >= 3 && resultados.length === 0 && !cargando" class="alert alert-warning shadow-sm">
+		  <i class="fas fa-exclamation-triangle"></i> No se encontraron datasets para: "<strong>{{ query }}</strong>"
+		</div>
+
+		<!-- Pantalla de bienvenida (opcional) -->
+		<div *ngIf="query.length === 0" class="text-muted text-center mt-5">
+		  <p>Ingresa un término para comenzar la exploración de datos.</p>
+		</div>
+  </main>
+</div>
+

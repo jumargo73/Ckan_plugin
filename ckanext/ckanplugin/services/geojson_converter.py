@@ -15,27 +15,55 @@ log = logging.getLogger(__name__)
 
 
 class GeoJSONConverter:
-    
+
+    @staticmethod
+    def normalizar_coordenada_universal(valor):
+        s = str(valor).strip()
+        
+        # Si tiene más de un punto, aplicamos la lógica de limpieza
+        if s.count('.') > 1:
+            # Buscamos la posición del PRIMER punto original
+            posicion_primer_punto = s.find('.')
+            
+            # Quitamos todos los puntos
+            solo_numeros = s.replace('.', '')
+            
+            # Si el número era negativo, la posición del punto se corre un lugar
+            # Ejemplo: -76.16... -> el punto estaba en el índice 3
+            nuevo_valor = solo_numeros[:posicion_primer_punto] + "." + solo_numeros[posicion_primer_punto:]
+            return float(nuevo_valor)
+        
+        # Si ya es un float válido (un solo punto), lo devuelve tal cual
+        try:
+            return float(s)
+        except ValueError:
+            return None
+
+        
     @staticmethod
     def detectar_columnas_coord(columnas):
         
         log.info("[GeoJSONConverter] detectar_columnas_coord ejecutado")
         
-        lat_variants = ['lat', 'latitude', 'latitud']
-        lon_variants = ['lon', 'lng', 'longitud', 'longitude']
+        lat_variants = ['lat', 'latitude', 'latitud','Latitud']
+        lon_variants = ['lon', 'lng', 'longitud', 'longitude','Longitud']
         lat_col = next((c for c in columnas if c.lower() in lat_variants), None)
         lon_col = next((c for c in columnas if c.lower() in lon_variants), None)
         return lat_col, lon_col
 
     @staticmethod
-    def convertir_a_geojson(records, lat_col, lon_col):
+    def convertir_a_geojson(self,records, lat_col, lon_col):
         
-        log.info("[GeoJSONConverter] convertir_a_geojson ejecutado")
+        log.info("[GeoJSONConverter][convertir_a_geojson] ejecutado")
+        log.info(f"[GeoJSONConverter][convertir_a_geojson][lat_col] ={lat_col}")
+        log.info(f"[GeoJSONConverter][convertir_a_geojson][lon_col]={lon_col}")
         features = []
         for row in records:
             try:
-                lat = float(row[lat_col])
-                lon = float(row[lon_col])
+                #lat = float(row[lat_col])
+                lat=self.normalizar_coordenada_universal(row[lat_col])
+                #lon = float(row[lon_col])
+                lon=self.normalizar_coordenada_universal(row[lon_col])
                 features.append({
                     "type": "Feature",
                     "geometry": mapping(Point(lon, lat)),
@@ -90,7 +118,7 @@ class GeoJSONConverter:
                 return
                 
             # 4. Convertir a GeoJSON
-            geojson = cls.convertir_a_geojson(records, lat_col, lon_col)
+            geojson = cls.convertir_a_geojson(cls,records, lat_col, lon_col)
             #log.warning("[GeoJSONConverter][convertir_csv_geojson] geojson = %s", geojson)
 
             # 5. Crear archivo temporal

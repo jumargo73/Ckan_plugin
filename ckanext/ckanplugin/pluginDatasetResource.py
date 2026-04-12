@@ -352,7 +352,7 @@ class CSVtoGeoJSONDatasetResourcePlugin(SingletonPlugin):
                 }
             
            
-    def get_consolidado_contador(selft,package_id): 
+    def get_consolidado_contador(self,package_id): 
                 
         """
             Devuelve el consolidado de las vistas y descargas de los recursos.

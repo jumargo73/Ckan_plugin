@@ -6,6 +6,7 @@ import ckan.model as model
 from ckan.model.resource import Resource  # ✅ Correcto import
 
 from flask import Blueprint, jsonify, redirect, request, Response
+from ckan.types import Context 
 
 import logging, json, subprocess, os
 from datetime import datetime
@@ -331,7 +332,114 @@ class DataJson(SingletonPlugin):
             # Siempre devolver success para no interrumpir CKAN
 
             #return jsonify({"success": True})
+
+       
+
+        @bp.route('/api/3/action/dashboard_stats', methods=['GET'])
+        
+        def dashboard_stats():
+
+            log.info("[data_json][dashboard_stats] ejecutado")
+            
+
+            # Usamos ignore_auth para que el dashboard sea público pero vea todo
+            context = {
+                'model': model,
+                'session': model.Session,
+                'ignore_auth': True,
+                'user': 'opendata'
+            }
+
+
+            count_result = toolkit.get_action('package_search')(context, {
+                    'rows': 0,
+                    'include_private': True,
+                    'fq': '+state:active'
+                })
+            registros = count_result['count']
+
+            # 2️⃣ Ahora hago otra llamada trayendo exactamente esa cantidad
+            privados = self.contar_privados(context,registros)       
+                     
+            
+            # 2. Huérfanos (tu consulta favorita)
+            huerfanos = self.obtener_huerfanos_totales(context,registros)  
+
+            #formatos
+            formatos_raw = self.formatos_raw(context,registros)           
+          
+            
+            # ... (tus conteos de datasets, huérfanos y privados anteriores) ...
+
+            # 4. Total de Organizaciones
+            orgs = toolkit.get_action('organization_list')(context, {})
+            total_orgs = len(orgs)
+
+            # 5. Total de Grupos
+            grupos = toolkit.get_action('group_list')(context, {})
+            total_grupos = len(grupos)
+
+            data=jsonify({
+                'total_datasets': registros,
+                'huerfanos': huerfanos,
+                'privados': privados,
+                'total_orgs': total_orgs,
+                'total_grupos': total_grupos,
+                'formatos_raw':formatos_raw
+            })    
+            log.warning(f"[DataJson[dashboard_stats][data]={data}")
+
+            return data
             
         return bp 
     
+
+    def obtener_huerfanos_totales(self,context:Context,registros):
+        # 'ignore_auth': True es lo que permite ver los privados sin restricciones
+        
+        data_dict = {
+            'q': '*:*',
+            'fq': '-groups:[* TO *]', # Tu filtro de huérfanos
+            'include_private': True,   # Obligatorio para Solr
+            'rows': registros               # Ajusta según cuántos esperes encontrar
+        }
+        
+        resultado = toolkit.get_action('package_search')(context, data_dict)
+        return resultado['count']
+
+
+    def contar_privados(self,context:Context,registros):
+        # Es vital usar ignore_auth para que el conteo sea real (vea todo)
+            
+        data_dict = {
+            'q': '*:*',
+            'fq': 'capacity:private', # Filtramos solo por capacidad privada
+            'rows': registros,                 # No queremos la lista, solo el total
+            'include_private': True
+        }
+        
+        resultado = toolkit.get_action('package_search')(context, data_dict)
+        return resultado['count']
     
+
+    def formatos_raw(self,context:Context,registros):
+        # Es vital usar ignore_auth para que el conteo sea real (vea todo)
+            
+        search_params = {
+        'q': '*:*',
+        'rows': registros,
+        'facet': True,
+        'facet.field': ['res_format'], # Pedimos los formatos
+        'include_private': True
+        }
+        resultado = toolkit.get_action('package_search')(context, search_params)
+
+        # Extraemos los formatos: CKAN los devuelve en una lista plana
+        # Ejemplo: ['CSV', 10, 'PDF', 5] -> Queremos convertirlo a algo fácil para Angular
+        formatos_raw = resultado.get('search_facets', {}).get('res_format', {}).get('items', [])
+        
+        # Los transformamos en un diccionario limpio: {"csv": 10, "pdf": 5}
+        formatos_limpios = {f['name']: f['count'] for f in formatos_raw}
+       
+        log.warning(f"[DataJson[dashboard_stats][formatos_raw][data]={formatos_limpios}")
+        return formatos_limpios

@@ -51,6 +51,7 @@ class CkanPlugin(DefaultDatasetForm,p.SingletonPlugin):
             __name__
         )
 
+        
         analytics_bp = Blueprint("analytics_bp", __name__)
 
         @analytics_bp.after_app_request
@@ -109,11 +110,13 @@ class CkanPlugin(DefaultDatasetForm,p.SingletonPlugin):
 
                     helpers.contar_descargas(resource_id,package_id) 
             except Exception as e:
-                log.warning(f"Error registrando descarga: {e}")    
+                log.warning(f"Error registrando descarga: {e}")   
 
         return [estadistica,noticias,analytics_bp, download_bp]
     
 
+    def hello_angular(self):
+        return tk.render('/home/index.html')
         
     def update_config(self, config):
 

@@ -1,0 +1,40 @@
+app-root {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.main-header {
+  width: 100%;
+  display: block;
+  width: 100%;
+  gap: 20px;
+  padding: 15px;
+  background: #f8f9fa;
+  background-color: #fff;
+  border-bottom: 1px solid #ddd;
+  justify-content: center; /* Centra el buscador horizontalmente */
+}
+
+
+
+/* Estilo para que el menú se vea como una barra de navegación real */
+.nav-menu {
+  display: flex;
+  gap: 30px;
+  border-bottom: 2px solid #f0f0f0;
+  padding-bottom: 15px;
+  width: 100%;
+}
+
+.nav-menu a {
+  text-decoration: none;
+  color: #555;
+  font-weight: 600;
+  font-size: 1.1rem;
+  transition: color 0.3s;
+}
+
+.nav-menu a:hover, .nav-menu a.active {
+  color: #007bff; /* Color azul para destacar */
+}

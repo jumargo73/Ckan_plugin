@@ -1,11 +1,25 @@
 csvgeojson.css:
-  output: ckanext-csvgeojson/%(version)s_csvgeojson.css
+  output: ckanext-ckanplugin/%(version)s_csvgeojson.css
   contents:
     - css/csvgeojson.css
     - css/resource-rating.css
+    
+ckanangular.css:
+    output: ckanext-ckanplugin/%(version)s_ckanangular.css
+    contents:
+        - angular/browser/styles.css      
 
 
 resource-rating.js:
-  output: ckanext-csvgeojson/%(version)s_resource-rating.js
+  output: ckanext-ckanplugin/%(version)s_resource-rating.js
   contents:
     - javascript/modules/resource-rating.js
+    
+    
+ckanangular.js:
+    filter: null
+    output: ckanext-ckanplugin/%(version)s_ckanangular.js
+    contents:
+        - angular/browser/main.js
+        
+ 
