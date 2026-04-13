@@ -333,10 +333,45 @@ class DataJson(SingletonPlugin):
 
             #return jsonify({"success": True})
 
+        @bp.route('/api/3/action/dataset_huerfanos', methods=['GET'])        
+        def dataset_huerfanos():
+            log.info("[data_json][dataset_huerfanos] ejecutado")
+             
+            context = {'model': model, 'session': model.Session, 'ignore_auth': True, 'user': 'opendata'}
+
+            count_result = toolkit.get_action('package_search')(context, {
+                    'rows': 0,
+                    'include_private': True,
+                    'fq': '+state:active'
+                })
+            registros = count_result['count']
+
+            # 1. Obtener datasets sin grupo
+            res_sin_grupo = toolkit.get_action('package_search')(context, {
+                'q': '*:*',
+                'fq': 'state:active AND -groups:[* TO *]',
+                'rows': registros,
+                'include_private': True
+            })
+
+            # 2. Obtener datasets sin organización
+            res_sin_org = toolkit.get_action('package_search')(context, {
+                'q': '*:*',
+                'fq': 'state:active AND -owner_org:[* TO *]',
+                'rows': registros,
+                'include_private': True
+            })
+
+            # 3. Unir y eliminar duplicados usando el ID único
+            # Usamos un diccionario para mantener el objeto completo pero evitar IDs repetidos
+            unificados = {ds['id']: ds for ds in (res_sin_grupo['results'] + res_sin_org['results'])}
+
+            # Retornamos la lista final
+            return jsonify(list(unificados.values()))
+
        
 
-        @bp.route('/api/3/action/dashboard_stats', methods=['GET'])
-        
+        @bp.route('/api/3/action/dashboard_stats', methods=['GET'])        
         def dashboard_stats():
 
             log.info("[data_json][dashboard_stats] ejecutado")
@@ -366,10 +401,14 @@ class DataJson(SingletonPlugin):
             huerfanos = self.obtener_huerfanos_totales(context,registros)  
 
             #formatos
-            formatos_raw = self.formatos_raw(context,registros)           
+            formatos_raw = self.get_stats_formatos(context,registros)   
+
+            grupos_raw=self.get_stats_grupos(context,registros)        
           
-            
+            organizacion_raw=self.obtener_organizacion_facet(context,registros) 
             # ... (tus conteos de datasets, huérfanos y privados anteriores) ...
+
+            stats_tematicas=self.get_stats_tematicas(context,registros) 
 
             # 4. Total de Organizaciones
             orgs = toolkit.get_action('organization_list')(context, {})
@@ -385,29 +424,103 @@ class DataJson(SingletonPlugin):
                 'privados': privados,
                 'total_orgs': total_orgs,
                 'total_grupos': total_grupos,
-                'formatos_raw':formatos_raw
+                'formatos_raw':formatos_raw,
+                'grupos_raw' : grupos_raw,
+                'organizacion_raw':organizacion_raw,
+                'stats_tematicas':stats_tematicas
             })    
             log.warning(f"[DataJson[dashboard_stats][data]={data}")
 
             return data
             
         return bp 
-    
 
-    def obtener_huerfanos_totales(self,context:Context,registros):
+    def obtener_organizacion_facet(self,context:Context,registros):
         # 'ignore_auth': True es lo que permite ver los privados sin restricciones
         
         data_dict = {
             'q': '*:*',
-            'fq': '-groups:[* TO *]', # Tu filtro de huérfanos
-            'include_private': True,   # Obligatorio para Solr
-            'rows': registros               # Ajusta según cuántos esperes encontrar
+            'include_private': True,
+            'rows': registros,
+            'facet': True,
+            'facet.field': ['organization']
         }
         
         resultado = toolkit.get_action('package_search')(context, data_dict)
-        return resultado['count']
 
+        organizacion_raw = resultado.get('search_facets', {}).get('organization', {}).get('items', [])
+        
+        organizacion_limpios = {f['name']: f['count'] for f in organizacion_raw}
 
+        organizacion_limpios['Total_Datasets']=resultado['count']
+
+        log.warning(f"[DataJson[dashboard_stats][grupos_raw][data]={organizacion_limpios}")
+
+        return organizacion_limpios    
+    
+
+    def get_stats_grupos(self,context:Context,registros):
+        # 'ignore_auth': True es lo que permite ver los privados sin restricciones
+        
+        data_dict = {
+            'q': '*:*',
+            'include_private': True,
+            'rows': registros,
+            'facet': True,
+            'facet.field': ['groups']
+        }
+        
+        resultado = toolkit.get_action('package_search')(context, data_dict)
+
+        grupos_raw = resultado.get('search_facets', {}).get('groups', {}).get('items', [])
+        
+        grupos_limpios = {f['name']: f['count'] for f in grupos_raw}
+
+        grupos_limpios['Total_Datasets']=resultado['count']
+
+        log.warning(f"[DataJson[dashboard_stats][grupos_raw][data]={grupos_limpios}")
+
+        return grupos_limpios
+
+    def obtener_huerfanos_totales(self,context:Context,registros):
+        # 'ignore_auth': True es lo que permite ver los privados sin restricciones
+        log.info("[data_json][obtener_huerfanos_totales] ejecutado")
+
+        context = {'model': model, 'session': model.Session, 'ignore_auth': True, 'user': 'opendata'}
+
+        count_result = toolkit.get_action('package_search')(context, {
+                'rows': 0,
+                'include_private': True,
+                'fq': '+state:active'
+            })
+        registros = count_result['count']
+
+        # 1. Obtener datasets sin grupo
+        res_sin_grupo = toolkit.get_action('package_search')(context, {
+            'q': '*:*',
+            'fq': 'state:active AND -groups:[* TO *]',
+            'rows': registros,
+            'include_private': True
+        })
+
+        # 2. Obtener datasets sin organización
+        res_sin_org = toolkit.get_action('package_search')(context, {
+            'q': '*:*',
+            'fq': 'state:active AND -owner_org:[* TO *]',
+            'rows': registros,
+            'include_private': True
+        })
+
+        # 3. Unir y eliminar duplicados usando el ID único
+        # Usamos un diccionario para mantener el objeto completo pero evitar IDs repetidos
+        unificados = {ds['id']: ds for ds in (res_sin_grupo['results'] + res_sin_org['results'])}
+
+        # Retornamos la lista final
+        data=list(unificados.values())
+        
+        return len(data)    
+
+    
     def contar_privados(self,context:Context,registros):
         # Es vital usar ignore_auth para que el conteo sea real (vea todo)
             
@@ -415,31 +528,108 @@ class DataJson(SingletonPlugin):
             'q': '*:*',
             'fq': 'capacity:private', # Filtramos solo por capacidad privada
             'rows': registros,                 # No queremos la lista, solo el total
-            'include_private': True
+            'include_private': True,
+            'facet.limit': -1,
+            'facet.mincount': 1
         }
         
         resultado = toolkit.get_action('package_search')(context, data_dict)
+        log.warning(f"[DataJson[dashboard_stats][contar_privados][resultado]={resultado}")
         return resultado['count']
     
-
-    def formatos_raw(self,context:Context,registros):
-        # Es vital usar ignore_auth para que el conteo sea real (vea todo)
-            
+    def get_stats_formatos(self,context:Context,registros):
         search_params = {
-        'q': '*:*',
-        'rows': registros,
-        'facet': True,
-        'facet.field': ['res_format'], # Pedimos los formatos
-        'include_private': True
+            'q': '*:*',
+            'rows': 1000,
+            'include_private': True,  # Trae públicos y privados
+            'fq': 'state:active'      # Solo activos
         }
-        resultado = toolkit.get_action('package_search')(context, search_params)
-
-        # Extraemos los formatos: CKAN los devuelve en una lista plana
-        # Ejemplo: ['CSV', 10, 'PDF', 5] -> Queremos convertirlo a algo fácil para Angular
-        formatos_raw = resultado.get('search_facets', {}).get('res_format', {}).get('items', [])
         
-        # Los transformamos en un diccionario limpio: {"csv": 10, "pdf": 5}
-        formatos_limpios = {f['name']: f['count'] for f in formatos_raw}
-       
-        log.warning(f"[DataJson[dashboard_stats][formatos_raw][data]={formatos_limpios}")
-        return formatos_limpios
+        results = toolkit.get_action('package_search')(context, search_params)
+        stats_formatos = {}
+        total_recursos=0
+
+        for dataset in results.get('results', []):
+            # Extraemos los recursos de cada dataset (sea público o privado)
+            resources = dataset.get('resources', [])
+            
+            for res in resources:
+                if res.get('state') == 'active':
+                    # Normalizamos el formato (ej: 'csv', 'CSV', 'text/csv' -> 'CSV')
+                    formato = res.get('format', 'Desconocido').upper().strip()
+                    
+                    if not formato:
+                        formato = "S/F" # Sin Formato
+
+                    if formato not in stats_formatos:
+                        stats_formatos[formato] = 0
+                    
+                    stats_formatos[formato] += 1
+                total_recursos+= 1
+        # Convertimos a una lista de objetos para Angular
+        formatos_json = [
+            {'nombre': k, 'cantidad': v} 
+            for k, v in stats_formatos.items()
+        ]
+
+        
+        total_recursos={'nombre': 'total_recursos', 'cantidad': total_recursos}
+        formatos_json.append(total_recursos)
+        log.info(f"[DataJson][[dashboard_stats]][get_stats_formatos][total_recursos]={total_recursos}")
+        
+        # Ordenamos de mayor a menor
+        formatos_json.sort(key=lambda x: x['cantidad'], reverse=True)
+        
+        return formatos_json
+
+    def get_stats_tematicas(self,context:Context,registros):
+        # 1. Obtenemos todos los datasets (ajusta 'rows' según tu volumen)
+        search_params = {
+            'q': '*:*',
+            'rows': registros,
+            'include_private': True,
+            'fq': '+state:active'
+        }
+        results = toolkit.get_action('package_search')(context, search_params)
+        log.info("[data_json][get_stats_tematicas][results]",results)
+        
+        stats = {}
+
+        stats = {}
+
+        for dataset in results.get('results', []):
+            groups = dataset.get('groups', [])
+            
+            # --- AQUÍ ESTÁ EL TRUCO ---
+            # Si la lista de grupos está vacía, saltamos al siguiente dataset inmediatamente
+            if not groups:
+                log.info("Saliendo de este dataset: No tiene temáticas asignadas.")
+                continue 
+
+            # 2. CONTEO MANUAL (La verdad absoluta)
+            # En lugar de usar dataset.get('num_resources'), contamos los recursos activos
+            recursos_activos = [
+                res for res in dataset.get('resources', []) 
+                if res.get('state') == 'active'
+            ]
+            conteo_real = len(recursos_activos)
+
+            log.info(f"Dataset: {dataset.get('name')} | Estado: {dataset.get('capacity')} | Recursos Activos: {conteo_real}")
+
+            for group in groups:
+                group_name = group.get('name')
+                if group_name not in stats:
+                    stats[group_name] = {
+                        'titulo': group.get('title') or group.get('display_name'),
+                        'total_datasets': 0,
+                        'total_recursos': 0,
+                        'url_ver_mas': f'/group/{group_name}'
+                    }
+                
+                # Solo sumará si el dataset pasó el 'if not groups'
+                stats[group_name]['total_datasets'] += 1
+                stats[group_name]['total_recursos'] += conteo_real
+
+        # Convertimos el diccionario a una lista para que el JSON sea más fácil de recorrer en Angular
+        return list(stats.values())
+        
