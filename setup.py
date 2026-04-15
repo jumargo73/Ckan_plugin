@@ -9,7 +9,7 @@ setup(
     zip_safe=False,
     entry_points='''
         [ckan.plugins]  
-        CkanPlugin=ckanext.ckanplugin.ckan:CkanPlugin
+        CkanPlugin=ckanext.ckanplugin.plugin_logic:CkanPlugin
         CsvGeoJsonApi=ckanext.ckanplugin.plugin:CSVtoGeoJSONApiPlugin
         CsvGeoJsonPlugin=ckanext.ckanplugin.CSVtoGeoJSON:CSVtoGeoJSONPlugin
         SelloExcelenciaView=ckanext.ckanplugin.sello:SelloExcelenciaView

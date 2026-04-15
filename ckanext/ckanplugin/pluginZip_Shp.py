@@ -5,6 +5,7 @@ from flask import Blueprint, jsonify, redirect,request,Response,stream_with_cont
 import json, logging,os,  mimetypes, subprocess
 import requests
 from ckan.common import config
+from configparser import ConfigParser
 import time
 import ckan.model as model
 from ckanext.ckanplugin.services.zip_shp_to_geojson import Zip_Shp_JSONConverter
@@ -18,6 +19,38 @@ log = logging.getLogger(__name__)
 class ApiZipShpToGeojsonView(SingletonPlugin):
 
     implements(IBlueprint)
+
+    def get_ckan_config(self):
+
+        log.info("[convert_job][get_ckan_config] ejecutado")
+        
+        
+        # Ruta a tu production.ini
+        config_path = "/usr/lib/ckan/default/src/ckan/ckan.ini"  # cámbiala según tu instalación
+        storage_path = '/var/lib/ckan/default/'
+
+
+        # 1. Cargar el archivo de configuración manualmente
+        if not os.path.exists(config_path):
+                raise Exception(f"No se encontró el archivo ini en: {config_path}")
+
+        # 1. Carga la configuración en el objeto 'config' global
+        config_ckan = ConfigParser()
+        config_ckan.read(config_path)
+
+        # CKAN guarda las variables en la sección [app:main]
+        site_url = config_ckan.get("app:main", "ckan.site_url", fallback=None)
+        api_key = config_ckan.get("app:main", "ckan.datapusher.api_token", fallback=None)
+        ssl_cert = config_ckan.get("app:main", "ckan.devserver.ssl_cert", fallback=None)
+
+        #api_key = os.environ.get("CKAN_API_KEY")  # mejor manejarlo como variable de entorno
+
+        log.info("[get_ckan_config] site_url: %s", site_url)
+        log.info("[get_ckan_config] api_key: %s", api_key)
+        log.info("[get_ckan_config] storage_path: %s", storage_path)
+        log.info("[get_ckan_config] ssl_cert: %s", ssl_cert)
+        
+        return site_url, api_key,storage_path,ssl_cert
 
     
     def get_blueprint(self):
@@ -54,7 +87,7 @@ class ApiZipShpToGeojsonView(SingletonPlugin):
             #log.info("[ApiZipShpToGeojsonView] convert_shp_geojson archivo=%s",archivo) 
             #log.info("[ApiZipShpToGeojsonView] convert_shp_geojson package_id=%s",package_id) 
             #log.info("[ApiZipShpToGeojsonView] convert_shp_geojson owner_org=%s",owner_org) 
-           
+            site_url, api_key,storage_path,ssl_cert = self.get_ckan_config()
 
             # Guardar archivo en /tmp
             tmp_path = f"/tmp/{archivo.filename}"
@@ -73,7 +106,11 @@ class ApiZipShpToGeojsonView(SingletonPlugin):
                         tmp_path,
                         package_id,
                         owner_org,
-                        filename
+                        filename,
+                        site_url, 
+                        api_key,
+                        storage_path,
+                        ssl_cert
                     ],
                     stdout=f,
                     stderr=subprocess.STDOUT,

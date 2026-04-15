@@ -1,10 +1,7 @@
 import geopandas as gpd
 import json, logging,os,  mimetypes,zipfile,tempfile,sys,shutil
 from datetime import datetime
-import ckan.lib.helpers as h
 from ckanapi import RemoteCKAN
-from configparser import ConfigParser
-from ckan.common import config
 #from ckan.plugins import toolkit
 from ckanapi.errors import NotFound
 import time
@@ -18,32 +15,38 @@ logging.basicConfig(
 
 log = logging.getLogger(__name__)
 
-def get_ckan_config():
 
-    log.info("[convert_job][get_ckan_config] ejecutado")
-    
-    
-    # Ruta a tu production.ini
-    ini_path = "/etc/ckan/default/produccion.ini"  # cámbiala según tu instalación
-    storage_path = '/var/lib/ckan/default/'
 
-    config_ckan = ConfigParser()
-    config_ckan.read(ini_path)
+def shp_to_geojson(shp_path, output_path=None):
+    try:
+        log.info(f"[convert_job][shp_to_geojson] Iniciando conversión SHP a GeoJSON para Archivo {shp_path}")
+        
+        # 1. Leer SHP
+        gdf = gpd.read_file(shp_path)
 
-    # CKAN guarda las variables en la sección [app:main]
-    site_url = config_ckan.get("app:main", "ckan.site_url", fallback=None)
-    api_key = config_ckan.get("app:main", "ckan.datapusher.api_token", fallback=None)
-    ssl_cert = config_ckan.get("app:main", "ckan.devserver.ssl_cert", fallback=None)
-   
-    
-    #api_key = os.environ.get("CKAN_API_KEY")  # mejor manejarlo como variable de entorno
+        # 2. REPROYECCIÓN (Clave para que el mapa no salga en blanco)
+        # Convertimos de Origen Nacional (o lo que traiga) a WGS84 (GPS)
+        if gdf.crs is not None:
+            log.info("[convert_job] Reproyectando a EPSG:4326...")
+            gdf = gdf.to_crs(epsg=4326)
 
-    log.info("[get_ckan_config] site_url: %s", site_url)
-    log.info("[get_ckan_config] api_key: %s", api_key)
-    log.info("[get_ckan_config] storage_path: %s", storage_path)
-    log.info("[get_ckan_config] ssl_cert: %s", ssl_cert)
-    
-    return site_url, api_key,storage_path,ssl_cert
+        # 3. SIMPLIFICACIÓN (Opcional pero recomendada para archivos de 245MB)
+        # Esto reduce el peso del archivo sin perder la forma de los predios
+        # gdf['geometry'] = gdf['geometry'].simplify(0.00001, preserve_topology=True)
+
+        # 4. Definir salida como .geojson
+        if not output_path:
+            output_path = os.path.splitext(shp_path)[0] + ".geojson"
+
+        # 5. Guardar como GeoJSON real
+        gdf.to_file(output_path, driver='GeoJSON')
+        
+        log.info("[convert_job][shp_to_geojson] GeoJSON generado con éxito en: %s", output_path)
+        return output_path
+
+    except Exception as e:
+        log.error("[convert_job][shp_to_geojson] Error en conversión: %s", e)
+        return None
 
 
 def shp_to_csv(shp_path, output_path=None, drop_geometry=False):
@@ -56,7 +59,7 @@ def shp_to_csv(shp_path, output_path=None, drop_geometry=False):
         - output_path: ruta donde guardar el CSV
         - drop_geometry: si True elimina geometría
         """
-        log.info("[convert_job] shp_to_csv ejecutado [Generando Archivo]")
+        log.info(f"[convert_job][shp_to_csv] Iniciando conversión SHP a CVS para Archivo {shp_path}") 
         # Leer SHP
         gdf = gpd.read_file(shp_path)
 
@@ -71,10 +74,11 @@ def shp_to_csv(shp_path, output_path=None, drop_geometry=False):
         else:
             # Mantener geometría como WKT
             gdf.to_csv(output_path, index=False)
-        #log.info("[convert_job] shp_to_csv output_path=%s",output_path)
+        log.info("[convert_job][shp_to_csv] CSV generado con éxito en: %s", output_path)
         return output_path
     except Exception as e:
             log.info("[convert_job] Error: %s",e)   
+
 
 def shp_to_csv_points(shp_path, output_path=None):
 
@@ -113,7 +117,7 @@ def ensure_resource_exists(ckan, resource_id, retries=5, wait=3):
     raise Exception(f"Recurso {resource_id} no disponible tras {retries} intentos")
 
 
-def update_resource_exists(ckan, resource_id, size, last_modified,mimetype,output_path,dataset_name,retries=5, wait=3):
+def update_resource_exists(ckan, resource_id, size, last_modified,mimetype,output_path,dataset_name,formato,retries=5, wait=3):
     """
     Actualiza el recurso en CKAN, reintenta si aún no está disponible.
     """
@@ -123,7 +127,7 @@ def update_resource_exists(ckan, resource_id, size, last_modified,mimetype,outpu
                 id=resource_id,
                 name=os.path.basename(output_path),
                 mimetype= mimetype,
-                format="CSV",
+                format=formato,
                 url=os.path.splitext(dataset_name)[0] + ".csv",   
                 size=size,
                 last_modified=last_modified.isoformat()
@@ -137,6 +141,96 @@ def update_resource_exists(ckan, resource_id, size, last_modified,mimetype,outpu
     raise Exception(f"Recurso {resource_id} no actualizado tras {retries} intentos")
 
 
+def upload_file(package_id,output_path,dataset_name,storage_path,ckan,tmpdir,formato):
+
+    
+    try:
+
+        log.info(f"[convert_job][upload_file] Creando Recurso para Archivo {output_path}")
+
+        resource = ckan.action.resource_create(
+            package_id=package_id,
+            name=os.path.basename(output_path),
+            format=formato,
+            url=os.path.splitext(dataset_name)[0] + "."+formato,         # marcador interno que dice “es un recurso subido”
+            url_type="upload"     # explícitamente indica que es un recurso local
+        
+        )
+
+        log.info(f"Resource Creado en BD : {resource['id']}")
+
+
+        #log.info("[convert_job] zip_shp_to_geojson resource create: %s", json.dumps(resource, indent=2, ensure_ascii=False))
+
+        #Guardar el Recurso    
+        resource_id = resource['id']
+        
+        #log.info("[convert_job] zip_shp_to_geojson resource_id=%s",resource_id)
+
+        
+        nuevo_nombre = resource_id[6:] 
+
+        #log.info("[convert_job] zip_shp_to_geojson nuevo_nombre=%s",nuevo_nombre)
+
+                
+        
+
+        # 2 Calcular ruta destino CKAN
+        geojson_res_id = resource_id # UUID del recurso
+
+        subdir = os.path.join('resources',geojson_res_id[0:3], geojson_res_id[3:6]) # Creacion Arbol donde va a qUUID del recurso
+        dest_dir = os.path.join(storage_path,subdir)
+        os.makedirs(dest_dir, exist_ok=True)
+        
+
+        # 3 Guardar Archivo
+        nuevo_nombre = resource_id[6:] 
+        dest_path = os.path.join(dest_dir, nuevo_nombre)
+        
+        if dataset_name is not None:
+            shutil.move(output_path, dest_path)
+            
+        #log.info("[convert_job] zip_shp_to_geojson dest_path=%s",dest_path)
+
+        # 4 Obtener size, last_modified y mimetype
+        size = os.path.getsize(dest_path)
+        last_modified = datetime.fromtimestamp(os.path.getmtime(dest_path))
+        mimetype, encoding = mimetypes.guess_type(output_path, strict=True)
+        
+        resource_existe = ensure_resource_exists(ckan, resource_id)
+
+        if format=="CSV":              
+            # Crear vista geoespacial si aplica
+            view = ckan.action.resource_view_create(
+                resource_id=resource_existe["id"],
+                view_type="Table",
+                title="Datatable_View"
+            )
+        else:
+            view = ckan.action.resource_view_create(
+                resource_id=resource_existe["id"],
+                view_type="GeoJson",
+                title="GeoJSON_View"
+            )   
+
+        log.info(f"Vista creada: {view['id']} para recurso {resource['id']}")
+
+        resource=update_resource_exists(ckan, resource_existe["id"],size, last_modified,mimetype,output_path,dataset_name,formato)
+        
+        log.info(f"Resource Actualizado: {resource['id']}")
+
+        # Limpieza del temporal
+        if format=="CSV":
+            shutil.rmtree(tmpdir)
+
+        log.info(f"[convert_job][upload_file] Proceso para Recurso {resource['id']} finalizado con exito")
+
+        return True
+
+    except Exception as e:
+        return False
+        log.info("[convert_job][upload_file] Error: %s",e)  
+
 def main():
     
     try:
@@ -149,7 +243,11 @@ def main():
         zip_path = sys.argv[1]      # Ruta al archivo zip o shp    
         package_id = sys.argv[2]   # ID del dataset
         owner_org = sys.argv[3]    # Organización
-        dataset_name=sys.argv[4]       # nombre archivo
+        dataset_name=sys.argv[4]   # nombre archivo
+        site_url=sys.argv[5]
+        api_key=sys.argv[6]
+        storage_path=sys.argv[7]
+        ssl_cert=sys.argv[8]
         output_path = None       # Ese 'None' que mandas
 
         log.info("=== Iniciando job de conversión SHP → GeoJSON ===")
@@ -158,8 +256,7 @@ def main():
         #log.info("[main] Owner Org: %s", owner_org)
         #log.info("[main] dataset_name: %s", dataset_name)
         
-        site_url, api_key,storage_path,ssl_cert = get_ckan_config()
-
+        
         log.info("[main] site_url: %s", site_url)
         log.info("[main] api_key: %s", api_key)
         log.info("[main] storage_path: %s", storage_path)
@@ -194,86 +291,31 @@ def main():
                         break
 
             if not shp_file:
-                #log.info("[convert_job] No se encontró ningún .shp dentro del ZIP")
-                h.flash_error("Error: No se encontró ningún .shp dentro del ZIP")
+                log.info("[convert_job] No se encontró ningún .shp dentro del ZIP")
+                #flash_error("Error: No se encontró ningún .shp dentro del ZIP")
             
             
             #log.info("[convert_job] zip_shp_to_geojson shp_file=%s",shp_file)
             
+            output_path=shp_to_geojson(shp_file, None)
+
+            formato="GeoJSON"
+
+            upload_file(package_id,output_path,dataset_name,storage_path,ckan,tmpdir,formato)
+
+            
+            log.info("[convert_job] zip_shp_to_geojson GeoJSON generado en: %s", output_path)
+
             output_path=shp_to_csv(shp_file, None, False)
 
-            log.info("[convert_job] shp_to_csv ejecutado [Archivo Generando con Archivo]")
+            formato="CSV"
 
-            resource = ckan.action.resource_create(
-                package_id=package_id,
-                name=os.path.basename(output_path),
-                format="CSV",
-                url=os.path.splitext(dataset_name)[0] + ".csv",         # marcador interno que dice “es un recurso subido”
-                url_type="upload"     # explícitamente indica que es un recurso local
+            upload_file(package_id,output_path,dataset_name,storage_path,ckan,tmpdir,formato)
             
-            )
-
-            log.info(f"Resource Creado: {resource['id']}")
-
-
-            #log.info("[convert_job] zip_shp_to_geojson resource create: %s", json.dumps(resource, indent=2, ensure_ascii=False))
-
-            #Guardar el Recurso    
-            resource_id = resource['id']
-            
-            #log.info("[convert_job] zip_shp_to_geojson resource_id=%s",resource_id)
-
-            
-            nuevo_nombre = resource_id[6:] 
-
-            #log.info("[convert_job] zip_shp_to_geojson nuevo_nombre=%s",nuevo_nombre)
-
-                    
-            
-
-            # 2 Calcular ruta destino CKAN
-            geojson_res_id = resource_id # UUID del recurso
-        
-            subdir = os.path.join('resources',geojson_res_id[0:3], geojson_res_id[3:6]) # Creacion Arbol donde va a qUUID del recurso
-            dest_dir = os.path.join(storage_path,subdir)
-            os.makedirs(dest_dir, exist_ok=True)
-            
-
-            # 3 Guardar Archivo
-            nuevo_nombre = resource_id[6:] 
-            dest_path = os.path.join(dest_dir, nuevo_nombre)
-            
-            if dataset_name is not None:
-                shutil.move(output_path, dest_path)
-                
-            #log.info("[convert_job] zip_shp_to_geojson dest_path=%s",dest_path)
-
-            # 4 Obtener size, last_modified y mimetype
-            size = os.path.getsize(dest_path)
-            last_modified = datetime.fromtimestamp(os.path.getmtime(dest_path))
-            mimetype, encoding = mimetypes.guess_type(output_path, strict=True)
-            
-            resource_existe = ensure_resource_exists(ckan, resource_id)
-
-            # Crear vista geoespacial si aplica
-            view = ckan.action.resource_view_create(
-                resource_id=resource_existe["id"],
-                view_type="datatables_view",
-                title="DataTable"
-            )
-
-            log.info(f"Vista creada: {view['id']}")
-
-            resource=update_resource_exists(ckan, resource_existe["id"],size, last_modified,mimetype,output_path,dataset_name)
-            log.info(f"Resource Actualizado: {resource['id']}")
-
-            # Limpieza del temporal
-            shutil.rmtree(tmpdir)
-
-        log.info("[convert_job] zip_shp_to_geojson GeoJSON generado en: %s", output_path)
+            log.info("[convert_job][main] Proceso de Conversion finalizado")
 
     except Exception as e:
-            log.info("[convert_job] Error: %s",e)     
+            log.info("[convert_job][main]Error: %s",e)     
     
 if __name__ == "__main__":
     main()
