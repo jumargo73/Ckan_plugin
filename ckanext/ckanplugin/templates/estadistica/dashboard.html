@@ -1,0 +1,21 @@
+{% extends "page.html" %}
+
+{%  block title  %}Listado de Sellos de Excelencia{% endblock %}
+
+{% block primary_content %}
+ 
+    <div clas="container mt-4">
+        <div class="row">
+            <div class="box" style="clear: both; margin-top: 20px">
+                <app-root></app-root>
+            </div>
+        </div>
+    </div>
+	
+{% endblock %}
+
+{% block secondary_content %}
+  {% snippet "/estadistica/snippets/helplers.html", group_type=group_type %}
+{% endblock %}
+
+

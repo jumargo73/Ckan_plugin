@@ -13,7 +13,7 @@
   {{ super() }}
   {# Los scripts deben ir después del super() para que 'ckan.module' ya exista #}
   {% asset 'ckanext-ckanplugin/resource-rating.js' %}
-  {% if request.path == '/' or '/angular' in request.path %}
+  {% if request.path=='/ckan/dashboard' in request.path %}
 	{% asset 'ckanext-ckanplugin/ckanangular.js' %}
   {% endif %}
 {% endblock %}

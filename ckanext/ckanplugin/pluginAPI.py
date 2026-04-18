@@ -25,6 +25,12 @@ class DataJson(SingletonPlugin):
 
         log.info("[DataJson][get_blueprint][data_json] ejecutado")
 
+
+        @bp.route('/ckan/dashboard', methods=['GET'])
+        def ckan_dashboard_stats():
+            return toolkit.render('estadistica/dashboard.html')
+        
+
         @bp.route('/api/3/action/data.json', methods=['GET'])
         def dataJson():
 
