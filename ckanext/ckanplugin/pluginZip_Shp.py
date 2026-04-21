@@ -1,5 +1,5 @@
 # file: blueprints/ckan_proxy.py
-from ckan.plugins import SingletonPlugin,implements,toolkit
+from ckan.plugins import SingletonPlugin,implements,toolkit,IResourceController
 from ckan.plugins.interfaces import  IConfigurer, IBlueprint
 from flask import Blueprint, jsonify, redirect,request,Response,stream_with_context
 import json, logging,os,  mimetypes, subprocess
@@ -11,6 +11,8 @@ import ckan.model as model
 from ckanext.ckanplugin.services.zip_shp_to_geojson import Zip_Shp_JSONConverter
 import ckan.lib.helpers as h
 from flask import redirect
+from ckan.types import Context 
+from typing import Any
 
 
 log = logging.getLogger(__name__)
@@ -19,6 +21,7 @@ log = logging.getLogger(__name__)
 class ApiZipShpToGeojsonView(SingletonPlugin):
 
     implements(IBlueprint)
+    log.info("[pluginZip_Shp][ApiZipShpToGeojsonView] ejecutado")
 
     def get_ckan_config(self):
 
@@ -83,10 +86,11 @@ class ApiZipShpToGeojsonView(SingletonPlugin):
             archivo = toolkit.request.files.get('upload')  
             package_id=toolkit.request.form.get('dataset_org') 
             owner_org=toolkit.request.form.get('owner_org') 
+            isEvent=toolkit.request.form.get('owner_org') or False
 
-            #log.info("[ApiZipShpToGeojsonView] convert_shp_geojson archivo=%s",archivo) 
-            #log.info("[ApiZipShpToGeojsonView] convert_shp_geojson package_id=%s",package_id) 
-            #log.info("[ApiZipShpToGeojsonView] convert_shp_geojson owner_org=%s",owner_org) 
+            log.info("[ApiZipShpToGeojsonView][convert_shp_geojson] archivo=%s",archivo) 
+            log.info("[ApiZipShpToGeojsonView][convert_shp_geojson] package_id=%s",package_id) 
+            log.info("[ApiZipShpToGeojsonView][convert_shp_geojson] owner_org=%s",owner_org) 
             site_url, api_key,storage_path,ssl_cert = self.get_ckan_config()
 
             # Guardar archivo en /tmp
@@ -110,7 +114,8 @@ class ApiZipShpToGeojsonView(SingletonPlugin):
                         site_url, 
                         api_key,
                         storage_path,
-                        ssl_cert
+                        ssl_cert,
+                        isEvent
                     ],
                     stdout=f,
                     stderr=subprocess.STDOUT,
@@ -123,5 +128,113 @@ class ApiZipShpToGeojsonView(SingletonPlugin):
             return toolkit.h.redirect_to("Shp_GeoJson.shp_to_geojson")  # mensaje de "Procesando..."
 
 
-        return ckan_shp_geojson_bp    
-        
+        return ckan_shp_geojson_bp  
+
+
+class ApiZipShpToGeojson(SingletonPlugin):
+                    
+    implements(IResourceController)
+    log.info("[pluginZip_Shp][ApiZipShpToGeojson] ejecutado")
+
+    def before_resource_create(self,context: Context, resource: dict[str, Any]):
+        pass
+
+    def after_resource_create(self,context: Context, resource: dict[str, Any]):
+        log.info("[pluginZip_Shp][ApiZipShpToGeojson][after_resource_create] ejecutado")
+        isEvent=False
+        # 1. Verificar si es ZIP
+        format = resource.get('format', '').lower()
+        if format == 'zip':
+            isEvent=True
+            # 2. Obtener el nombre original (limpiando posibles rutas)
+            nombre_sucio = resource.get('name') or resource.get('url') or 'recurso_espacial.zip'
+
+            # os.path.basename limpia rutas como '/tmp/subidas/datos.zip' y deja solo 'datos.zip'
+            nombre_limpio = os.path.basename(nombre_sucio)
+
+            # Si el nombre no tiene extensión (pasa a veces en CKAN), se la ponemos
+            if not nombre_limpio.lower().endswith('.zip'):
+                nombre_limpio = f"{nombre_limpio}.zip"
+
+            # 3. Obtener la URL base de la configuración
+            site_url = toolkit.config.get('ckan.site_url')
+
+            # 4. Construir la URL completa al endpoint
+            # Esto resultará en: http://localhost:5000/ckan/shp_to_geojson/convert
+            endpoint_url = f"{site_url.rstrip('/')}/ckan/shp_to_geojson/convert"
+            
+            # 5. Obtener la ruta local del archivo en el storage de CKAN
+            path_file = resource.get('url') # O la lógica de subida local
+
+            # 6. Obtener la ruta base del storage desde el .ini
+            storage_path = toolkit.config.get('ckan.storage_path')
+            res_id = resource.get('id')
+            package_id = resource.get('package_id')
+
+
+            # Obtener la organización (owner_org) del dataset
+            # Nota: A veces está en resource, si no, hay que traerla del package
+            pkg = toolkit.get_action('package_show')(context, {'id': package_id})
+            org_id = pkg.get('owner_org')
+
+            # 7. Construir la ruta física real donde CKAN guardó el archivo
+            # Estructura típica de CKAN: storage/resources/abc/def/ghi...      
+            file_path = os.path.join(
+                storage_path, 'resources', 
+                res_id[0:3], res_id[3:6], res_id[6:]
+            )
+            
+                # 5. Datos para el endpoint
+            if os.path.exists(file_path):
+                package_id = resource.get('package_id')
+
+                payload = {
+                'dataset_org': package_id,
+                'owner_org': org_id,
+                'isEvent':isEvent
+                }
+                
+                files = {
+                    'upload': (nombre_limpio, open(file_path, 'rb'), 'application/zip')
+                }
+            
+                try:
+                    # Abrir el archivo y enviarlo al endpoint
+                    response = requests.post(endpoint_url, data=payload, files=files)
+                    if response.status_code == 200:
+                        print("[pluginZip_Shp][ApiZipShpToGeojson][after_resource_create] Conversión iniciada exitosamente")
+                        toolkit.flash_success("Archivo ZIP detectado: Iniciando conversión a GeoJSON y CSV.")
+                        toolkit.h.redirect_to(toolkit.url_for('dataset.read', id=package_id))
+                except Exception as e:
+                    print(f"[pluginZip_Shp][ApiZipShpToGeojson][after_resource_create] Error enviando al endpoint: {e}")
+
+
+    def before_resource_update(self,context: Context, current: dict[str, Any], resource: dict[str, Any]):
+        pass
+
+    def after_resource_update(self, context, resource):
+        pass
+
+
+    def before_resource_delete(self,context: Context, resource: dict[str, Any], resources: list[dict[str, Any]]):
+        pass
+
+    def after_resource_delete(self,context: Context, resources: list[dict[str, Any]]):
+        pass    
+
+
+    def before_resource_show(self,resource_dict: dict[str, Any]):
+        return resource_dict
+
+
+    def before_resource_search(self,search_params: dict[str, Any]):
+        return search_params 
+    
+    def after_resource_search(self,context: Context,data_dict: dict[str, Any], search_params: dict[str, Any]):
+    
+        return data_dict
+    
+
+class ShpPlugin(ApiZipShpToGeojson, ApiZipShpToGeojsonView):
+    """Clase unificadora que no necesita código extra"""
+    pass

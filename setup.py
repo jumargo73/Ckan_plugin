@@ -14,7 +14,7 @@ setup(
         CsvGeoJsonPlugin=ckanext.ckanplugin.CSVtoGeoJSON:CSVtoGeoJSONPlugin
         SelloExcelenciaView=ckanext.ckanplugin.sello:SelloExcelenciaView
         Odata_Api=ckanext.ckanplugin.pluginOdata:ApiODataPluginView
-        ShpGeoJsonPlugin=ckanext.ckanplugin.pluginZip_Shp:ApiZipShpToGeojsonView    
+        ShpGeoJsonPlugin=ckanext.ckanplugin.pluginZip_Shp:ShpPlugin    
         FixDateFormatPlugin=ckanext.ckanplugin.pluginFixDateFormatPlugin:FixDateFormatPlugin
         DataJSon=ckanext.ckanplugin.pluginAPI:DataJson
         DatasetResourcePlugin=ckanext.ckanplugin.pluginDatasetResource:CSVtoGeoJSONDatasetResourcePlugin

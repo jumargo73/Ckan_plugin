@@ -19,7 +19,7 @@ log = logging.getLogger(__name__)
 
 def shp_to_geojson(shp_path, output_path=None):
     try:
-        log.info(f"[convert_job][shp_to_geojson] Iniciando conversión SHP a GeoJSON para Archivo {shp_path}")
+        log.info(f"[ApiZipShpToGeojsonView][convert_job][shp_to_geojson] Iniciando conversión SHP a GeoJSON para Archivo {shp_path}")
         
         # 1. Leer SHP
         gdf = gpd.read_file(shp_path)
@@ -27,7 +27,7 @@ def shp_to_geojson(shp_path, output_path=None):
         # 2. REPROYECCIÓN (Clave para que el mapa no salga en blanco)
         # Convertimos de Origen Nacional (o lo que traiga) a WGS84 (GPS)
         if gdf.crs is not None:
-            log.info("[convert_job] Reproyectando a EPSG:4326...")
+            log.info("[ApiZipShpToGeojsonView][convert_job] Reproyectando a EPSG:4326...")
             gdf = gdf.to_crs(epsg=4326)
 
         # 3. SIMPLIFICACIÓN (Opcional pero recomendada para archivos de 245MB)
@@ -41,11 +41,11 @@ def shp_to_geojson(shp_path, output_path=None):
         # 5. Guardar como GeoJSON real
         gdf.to_file(output_path, driver='GeoJSON')
         
-        log.info("[convert_job][shp_to_geojson] GeoJSON generado con éxito en: %s", output_path)
+        log.info("[ApiZipShpToGeojsonView][convert_job][shp_to_geojson] GeoJSON generado con éxito en: %s", output_path)
         return output_path
 
     except Exception as e:
-        log.error("[convert_job][shp_to_geojson] Error en conversión: %s", e)
+        log.error("[ApiZipShpToGeojsonView][convert_job][shp_to_geojson] Error en conversión: %s", e)
         return None
 
 
@@ -59,7 +59,7 @@ def shp_to_csv(shp_path, output_path=None, drop_geometry=False):
         - output_path: ruta donde guardar el CSV
         - drop_geometry: si True elimina geometría
         """
-        log.info(f"[convert_job][shp_to_csv] Iniciando conversión SHP a CVS para Archivo {shp_path}") 
+        log.info(f"[ApiZipShpToGeojsonView][convert_job][shp_to_csv] Iniciando conversión SHP a CVS para Archivo {shp_path}") 
         # Leer SHP
         gdf = gpd.read_file(shp_path)
 
@@ -74,7 +74,7 @@ def shp_to_csv(shp_path, output_path=None, drop_geometry=False):
         else:
             # Mantener geometría como WKT
             gdf.to_csv(output_path, index=False)
-        log.info("[convert_job][shp_to_csv] CSV generado con éxito en: %s", output_path)
+        log.info("[ApiZipShpToGeojsonView][convert_job][convert_job][shp_to_csv] CSV generado con éxito en: %s", output_path)
         return output_path
     except Exception as e:
             log.info("[convert_job] Error: %s",e)   
@@ -82,7 +82,7 @@ def shp_to_csv(shp_path, output_path=None, drop_geometry=False):
 
 def shp_to_csv_points(shp_path, output_path=None):
 
-    log.info("[convert_job] shp_to_csv_points ejecutado")
+    log.info("[ApiZipShpToGeojsonView][convert_job][shp_to_csv_points] ejecutado")
     gdf = gpd.read_file(shp_path)
 
     # Extraer lat/lon si es de puntos
@@ -104,14 +104,14 @@ def ensure_resource_exists(ckan, resource_id, retries=5, wait=3):
     for intento in range(retries):
         try:
             resource = ckan.action.resource_show(id=resource_id)
-            log.info("[ensure_resource_exists] Recurso encontrado: %s", resource["id"])
+            log.info("[ApiZipShpToGeojsonView][convert_job][ensure_resource_exists] Recurso encontrado: %s", resource["id"])
             return resource
         except NotFound:
-            log.warning("[ensure_resource_exists] Recurso %s no encontrado. Reintento %s/%s",
+            log.warning("[ApiZipShpToGeojsonView][convert_job][ensure_resource_exists] Recurso %s no encontrado. Reintento %s/%s",
                         resource_id, intento + 1, retries)
             time.sleep(wait)
         except Exception as e:
-            log.error("[ensure_resource_exists] Error inesperado: %s", e, exc_info=True)
+            log.error("[ApiZipShpToGeojsonView][convert_job][ensure_resource_exists] Error inesperado: %s", e, exc_info=True)
             raise
 
     raise Exception(f"Recurso {resource_id} no disponible tras {retries} intentos")
@@ -132,7 +132,7 @@ def update_resource_exists(ckan, resource_id, size, last_modified,mimetype,outpu
                 size=size,
                 last_modified=last_modified.isoformat()
             )
-            log.info("[update_resource_exists] Recurso Actualizado: %s", resource_id)
+            log.info("[ApiZipShpToGeojsonView][convert_job][update_resource_exists] Recurso Actualizado: %s", resource_id)
             return resource
         except Exception as e:
             print(f"[WARN] Intento {i+1}/{retries} falló: {e}")
@@ -146,7 +146,7 @@ def upload_file(package_id,output_path,dataset_name,storage_path,ckan,tmpdir,for
     
     try:
 
-        log.info(f"[convert_job][upload_file] Creando Recurso para Archivo {output_path}")
+        log.info(f"[ApiZipShpToGeojsonView][convert_job][upload_file] Creando Recurso para Archivo {output_path}")
 
         resource = ckan.action.resource_create(
             package_id=package_id,
@@ -157,7 +157,7 @@ def upload_file(package_id,output_path,dataset_name,storage_path,ckan,tmpdir,for
         
         )
 
-        log.info(f"Resource Creado en BD : {resource['id']}")
+        log.info(f"[ApiZipShpToGeojsonView][convert_job][upload_file] Resource Creado en BD : {resource['id']}")
 
 
         #log.info("[convert_job] zip_shp_to_geojson resource create: %s", json.dumps(resource, indent=2, ensure_ascii=False))
@@ -199,36 +199,36 @@ def upload_file(package_id,output_path,dataset_name,storage_path,ckan,tmpdir,for
         
         resource_existe = ensure_resource_exists(ckan, resource_id)
 
-        if format=="CSV":              
+        if format.lower()=="csv":              
             # Crear vista geoespacial si aplica
             view = ckan.action.resource_view_create(
                 resource_id=resource_existe["id"],
                 view_type="Table",
                 title="Datatable_View"
             )
-        else:
+        elif format.lower()=="geojson":
             view = ckan.action.resource_view_create(
                 resource_id=resource_existe["id"],
                 view_type="GeoJson",
                 title="GeoJSON_View"
             )   
 
-        log.info(f"Vista creada: {view['id']} para recurso {resource['id']}")
+        log.info(f"[ApiZipShpToGeojsonView][convert_job][upload_file] Vista creada: {view['id']} para recurso {resource['id']}")
 
         resource=update_resource_exists(ckan, resource_existe["id"],size, last_modified,mimetype,output_path,dataset_name,formato)
         
-        log.info(f"Resource Actualizado: {resource['id']}")
+        log.info(f"[ApiZipShpToGeojsonView][convert_job][upload_file] Resource Actualizado: {resource['id']}")
 
         # Limpieza del temporal
         if format=="CSV":
             shutil.rmtree(tmpdir)
 
-        log.info(f"[convert_job][upload_file] Proceso para Recurso {resource['id']} finalizado con exito")
+        log.info(f"[ApiZipShpToGeojsonView][convert_job][upload_file] Proceso para Recurso {resource['id']} finalizado con exito")
 
-        return True
+        return resource['id']
 
     except Exception as e:
-        return False
+        return None
         log.info("[convert_job][upload_file] Error: %s",e)  
 
 def main():
@@ -248,6 +248,7 @@ def main():
         api_key=sys.argv[6]
         storage_path=sys.argv[7]
         ssl_cert=sys.argv[8]
+        isEvent=sys.argv[9]
         output_path = None       # Ese 'None' que mandas
 
         log.info("=== Iniciando job de conversión SHP → GeoJSON ===")
@@ -257,13 +258,14 @@ def main():
         #log.info("[main] dataset_name: %s", dataset_name)
         
         
-        log.info("[main] site_url: %s", site_url)
-        log.info("[main] api_key: %s", api_key)
-        log.info("[main] storage_path: %s", storage_path)
-        log.info("[main] ssl_cert: %s", ssl_cert)
+        log.info("[ApiZipShpToGeojsonView][convert_job][main] site_url: %s", site_url)
+        log.info("[ApiZipShpToGeojsonView][convert_job][main] api_key: %s", api_key)
+        log.info("[ApiZipShpToGeojsonView][convert_job][main] storage_path: %s", storage_path)
+        log.info("[ApiZipShpToGeojsonView][convert_job][main] ssl_cert: %s", ssl_cert)
 
         session = requests.Session()
-        session.verify = certifi.where() 
+        session.verify = False 
+        session.headers.update({'User-Agent': 'opendata'})
 
         ckan = RemoteCKAN(site_url, apikey=api_key,session=session)
         #ckan1 = RemoteCKAN(site_url, apikey=api_key,verify=ssl_cert)
@@ -291,31 +293,32 @@ def main():
                         break
 
             if not shp_file:
-                log.info("[convert_job] No se encontró ningún .shp dentro del ZIP")
+                log.info("[ApiZipShpToGeojsonView][convert_job][main] No se encontró ningún .shp dentro del ZIP")
                 #flash_error("Error: No se encontró ningún .shp dentro del ZIP")
             
+            if not isEvent:
+                formato="Zip"
+                resource_id=upload_file(package_id,output_path,dataset_name,storage_path,ckan,tmpdir,formato)            
+                log.info(f"[ApiZipShpToGeojsonView][convert_job][main] Recursos {resource_id} formato {formato} asociado a {package_id}-{dataset_name} path {output_path}")
             
-            #log.info("[convert_job] zip_shp_to_geojson shp_file=%s",shp_file)
             
-            output_path=shp_to_geojson(shp_file, None)
-
-            formato="GeoJSON"
-
-            upload_file(package_id,output_path,dataset_name,storage_path,ckan,tmpdir,formato)
-
             
-            log.info("[convert_job] zip_shp_to_geojson GeoJSON generado en: %s", output_path)
-
-            output_path=shp_to_csv(shp_file, None, False)
-
             formato="CSV"
+            output_path=shp_to_csv(shp_file, None, False)
+            resource_id=upload_file(package_id,output_path,dataset_name,storage_path,ckan,tmpdir,formato)            
+            log.info(f"[ApiZipShpToGeojsonView][convert_job][main] Recursos {resource_id} formato {formato} asociado a {package_id}-{dataset_name} path {output_path}")
 
-            upload_file(package_id,output_path,dataset_name,storage_path,ckan,tmpdir,formato)
             
-            log.info("[convert_job][main] Proceso de Conversion finalizado")
+            formato="GeoJSON"
+            output_path=shp_to_geojson(shp_file, None)
+            resource_id=upload_file(package_id,output_path,dataset_name,storage_path,ckan,tmpdir,formato)
+            log.info(f"[ApiZipShpToGeojsonView][convert_job][main] Recursos {resource_id} formato {formato} asociado a {package_id}-{dataset_name} path {output_path}")
+
+                        
+            log.info("[ApiZipShpToGeojsonView][convert_job][main] Proceso de Conversion finalizado")
 
     except Exception as e:
-            log.info("[convert_job][main]Error: %s",e)     
+            log.info("[ApiZipShpToGeojsonView][convert_job][main]Error: %s",e)     
     
 if __name__ == "__main__":
     main()

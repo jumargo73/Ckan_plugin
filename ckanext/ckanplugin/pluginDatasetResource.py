@@ -162,6 +162,8 @@ class CSVtoGeoJSONDatasetResourcePlugin(SingletonPlugin):
         try:
 
             contadores=[]
+
+            
             
             # 1️⃣ Obtener contadores desde tu acción
             #contador_action = toolkit get_action('contador_get')
