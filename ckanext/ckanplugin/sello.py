@@ -672,3 +672,97 @@ class SelloExcelenciaView(SingletonPlugin):
         
 
   
+class SelloExcelenciaAPI(SingletonPlugin):
+
+    implements(IPackageController)
+    log.info("[pluginZip_Shp][ApiZipShpToGeojson] ejecutado")
+
+    def after_dataset_create(self,context: Context,  pkg_dict: dict[str, Any]):        
+        return pkg_dict
+    
+    def after_dataset_update(self,context: Context, pkg_dict: dict[str, Any]):
+
+        log.info("[CSVtoGeoJSONPlugin] after_dataset_update ejecutado")
+
+        if context.get('skip_sello_excelencia'):
+            return    
+
+        
+        # Leer el valor del checkbox desde el formulario
+        val =  request.form.get('sello_excelencia') or pkg_dict.get('sello_excelencia')
+
+        
+        # Determinar si está marcado
+        is_checked = bool(val and str(val).strip().lower() in TRUTHY)
+
+        #log.info("[CSVtoGeoJSONPlugin] after_dataset_update tiene sello , %s",is_checked) 
+
+        # Traer el dataset actual
+        pkg_id = pkg_dict.get('id') or pkg_dict.get('name')
+        if not pkg_id:
+            return
+
+        pkg =   toolkit.get_action('package_show')({'user': context.get('user')}, {'id': pkg_id})
+        extras = pkg.get('extras', [])
+
+        # Quitar valor previo si existe
+        extras = [e for e in extras if e.get('key') != 'sello_excelencia']
+
+        # Guardar cambios
+        if is_checked:
+            extras.append({'key': 'sello_excelencia', 'value': 'true'})
+
+        # ⚠️ Pasar bandera para que el evento no se dispare otra vez
+        new_context = dict(context, skip_sello_excelencia=True)
+        toolkit.get_action('package_patch')(new_context, {'id': pkg_id, 'extras': extras})
+
+        #log.info("[CSVtoGeoJSONPlugin] after_dataset_update Dataset Marcado con Exito")          
+    
+    def after_dataset_delete(self,context: Context, pkg_dict: dict[str, Any]):
+        pass
+
+    def before_dataset_show(self,context: Context, pkg_dict: dict[str, Any]):
+        return pkg_dict
+
+    # --- dataset_show ---   
+    def after_dataset_show(self,context: Context, pkg_dict: dict[str, Any]):
+
+        #log.info("[CSVtoGeoJSONPlugin] after_dataset_show ejecutado")
+        ##log.info("[SelloExcelenciaView]  fter_dataset_show pkg_dict devuelto: %s", json.dumps(pkg_dict, indent=2, ensure_ascii=False))    
+        return pkg_dict
+        
+    def before_dataset_view(self,pkg_dict: dict[str, Any]):
+        return pkg_dict  
+        
+    # --- dataset_search ---    
+    def before_dataset_search(self,search_params: dict[str, Any]):
+        return search_params    
+
+
+    def after_dataset_search(self,search_results: dict[str, Any], search_params: dict[str, Any]):
+        return search_results
+
+
+    def before_dataset_index(self,pkg_dict: dict[str, Any]):
+        return pkg_dict
+    
+    
+    # --- create ---   
+    def create(self,entity: model.Package):
+        pass
+    
+    # --- delete ---  
+    def delete(self,entity: model.Package):
+        pass
+    
+    # --- create ---
+    def edit(self,entity: model.Package):
+        pass        
+        
+    # --- READ ---      
+    def read(self,entity: model.Package):
+        pass
+
+
+class SelloExcelenciaPlugin(SelloExcelenciaView,SelloExcelenciaAPI):
+    pass    

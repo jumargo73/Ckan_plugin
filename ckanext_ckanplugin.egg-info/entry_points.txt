@@ -2,9 +2,8 @@
 CkanPlugin = ckanext.ckanplugin.plugin_logic:CkanPlugin
 CsvGeoJsonApi = ckanext.ckanplugin.plugin:CSVtoGeoJSONApiPlugin
 CsvGeoJsonPlugin = ckanext.ckanplugin.CSVtoGeoJSON:CSVtoGeoJSONPlugin
-DataJSon = ckanext.ckanplugin.pluginAPI:DataJson
-DatasetResourcePlugin = ckanext.ckanplugin.pluginDatasetResource:CSVtoGeoJSONDatasetResourcePlugin
+DataJSonPlugin = ckanext.ckanplugin.pluginAPI:DataJsonPlugin
 FixDateFormatPlugin = ckanext.ckanplugin.pluginFixDateFormatPlugin:FixDateFormatPlugin
-Odata_Api = ckanext.ckanplugin.pluginOdata:ApiODataPluginView
-SelloExcelenciaView = ckanext.ckanplugin.sello:SelloExcelenciaView
-ShpGeoJsonPlugin = ckanext.ckanplugin.pluginZip_Shp:ShpPlugin
+OdataPlugin = ckanext.ckanplugin.pluginOdata:ODataPlugin
+SelloExcelenciaPlugin = ckanext.ckanplugin.sello:SelloExcelenciaPlugin
+ShpPlugin = ckanext.ckanplugin.pluginZip_Shp:ShpPlugin

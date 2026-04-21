@@ -13,6 +13,8 @@ import ckan.lib.helpers as h
 from flask import redirect
 from ckan.types import Context 
 from typing import Any
+from ckanext.ckanplugin.services.geojson_converter import GeoJSONConverter
+
 
 
 log = logging.getLogger(__name__)
@@ -213,7 +215,27 @@ class ApiZipShpToGeojson(SingletonPlugin):
         pass
 
     def after_resource_update(self, context, resource):
-        pass
+        log.warning("[CSVtoGeoJSONPlugin] after_resource_update ejecutado")
+        
+        # Procesar solo CSV
+        if resource.get('format', '').lower() == 'csv':
+
+            # Obtener dataset completo
+            package =   toolkit.get_action('package_show')(context, {'id': resource['package_id']})
+            
+            
+            # Buscar recurso GeoJSON ya existente en el paquete
+            geojson_resource = next(
+                (r for r in package['resources'] if r.get('format', '').lower() == 'geojson'),
+                None
+            )
+
+            if geojson_resource:
+                log.warning("[CSVtoGeoJSONPlugin] GeoJSON ya existe, será actualizado (ID: %s)", geojson_resource['id'])
+                GeoJSONConverter.convertir_csv_geojson(resource['id'], geojson_resource['id'])  # Pasar ID para update
+            else:
+                log.warning("[CSVtoGeoJSONPlugin] No hay GeoJSON, creando nuevo")
+                GeoJSONConverter.convertir_csv_geojson(resource['id'])
 
 
     def before_resource_delete(self,context: Context, resource: dict[str, Any], resources: list[dict[str, Any]]):

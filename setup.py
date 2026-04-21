@@ -12,11 +12,10 @@ setup(
         CkanPlugin=ckanext.ckanplugin.plugin_logic:CkanPlugin
         CsvGeoJsonApi=ckanext.ckanplugin.plugin:CSVtoGeoJSONApiPlugin
         CsvGeoJsonPlugin=ckanext.ckanplugin.CSVtoGeoJSON:CSVtoGeoJSONPlugin
-        SelloExcelenciaView=ckanext.ckanplugin.sello:SelloExcelenciaView
-        Odata_Api=ckanext.ckanplugin.pluginOdata:ApiODataPluginView
-        ShpGeoJsonPlugin=ckanext.ckanplugin.pluginZip_Shp:ShpPlugin    
+        SelloExcelenciaPlugin=ckanext.ckanplugin.sello:SelloExcelenciaPlugin
+        OdataPlugin=ckanext.ckanplugin.pluginOdata:ODataPlugin
+        ShpPlugin=ckanext.ckanplugin.pluginZip_Shp:ShpPlugin    
         FixDateFormatPlugin=ckanext.ckanplugin.pluginFixDateFormatPlugin:FixDateFormatPlugin
-        DataJSon=ckanext.ckanplugin.pluginAPI:DataJson
-        DatasetResourcePlugin=ckanext.ckanplugin.pluginDatasetResource:CSVtoGeoJSONDatasetResourcePlugin
+        DataJSonPlugin=ckanext.ckanplugin.pluginAPI:DataJsonPlugin
     ''',
 )

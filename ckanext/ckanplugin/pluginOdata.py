@@ -14,7 +14,7 @@ log = logging.getLogger(__name__)
 #CKAN_BASE_URL = "https://datosabiertos.valledelcauca.gov.co"
 CKAN_BASE_URL = "http://www.datosabiertos.valledelcauca.gov.co"
 
-class ApiODataPluginView(SingletonPlugin):
+class ODataView(SingletonPlugin):
    
     implements(IBlueprint)
     
@@ -67,3 +67,7 @@ class ApiODataPluginView(SingletonPlugin):
             return json.dumps(records, ensure_ascii=False)
         
         return ckan_proxy_bp
+    
+
+class  ODataPlugin(ODataView):
+    pass    
