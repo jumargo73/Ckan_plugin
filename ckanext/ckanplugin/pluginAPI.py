@@ -419,6 +419,9 @@ class DataJsonView(SingletonPlugin):
 
             stats_tematicas=self.get_stats_tematicas(context,registros) 
 
+            consolidado_contador_organizaciones=self.get_consolidado_contador_organizaciones(context,registros)
+            consolidado_contador_grupos=self.get_consolidado_contador_grupos(context,registros)
+            consolidado_contador_dataset=self.get_consolidado_contador_dataset(context,registros)
             # 4. Total de Organizaciones
             orgs = toolkit.get_action('organization_list')(context, {})
             total_orgs = len(orgs)
@@ -436,7 +439,10 @@ class DataJsonView(SingletonPlugin):
                 'formatos_raw':formatos_raw,
                 'grupos_raw' : grupos_raw,
                 'organizacion_raw':organizacion_raw,
-                'stats_tematicas':stats_tematicas
+                'stats_tematicas':stats_tematicas,
+                'consolidado_contador_grupos':consolidado_contador_grupos,
+                'consolidado_contador_organizaciones':consolidado_contador_organizaciones,
+                'consolidado_contador_dataset':consolidado_contador_dataset
             })    
             log.warning(f"[DataJson[dashboard_stats][data]={data}")
 
@@ -641,6 +647,197 @@ class DataJsonView(SingletonPlugin):
 
         # Convertimos el diccionario a una lista para que el JSON sea más fácil de recorrer en Angular
         return list(stats.values())
+    
+    def get_consolidado_contador_organizaciones(self,context:Context,registros):
+
+        resultados_totales = []
+        
+        context = {
+            'model': model,
+            'session': model.Session,
+            'user': toolkit.c.user  # o el nombre de un usuario válido
+        }   
+
+        
+        data_dict = {
+            'all_fields': True,   # Si quieres que traiga más datos
+            'include_extras': True
+        } 
+
+        orgs = toolkit.get_action('organization_list')(context, data_dict)
+
+        log.info(f"[DataJsonView][get_consolidado_contador_organizaciones] orgs: {orgs}")
+        
+        for org in orgs:
+
+            busqueda_params = {
+                'q': '*:*',
+                'rows': registros,
+                'include_private': True,
+                'fq': f'+state:active AND owner_org:{org["id"]}'
+            }
+
+            log.info(f"[DataJsonView][get_consolidado_contador_organizaciones]  busqueda_params: { busqueda_params}")
+              
+            datasets = toolkit.get_action('package_search')(context,busqueda_params)
+            log.info(f"[DataJsonView][get_consolidado_contador_organizaciones] packages: {datasets['results']}")
+            resultados_totales.append(self.consolidado_contador(datasets['results'],org["name"],None))
+           
+        log.info(f"[DataJsonView][get_consolidado_contador_organizaciones] resultados_totales: {resultados_totales}")    
+        return resultados_totales
+    
+
+    def get_consolidado_contador_grupos(self,context:Context,registros):
+
+        resultados_totales = []
+        context = {
+            'model': model,
+            'session': model.Session,
+            'user': toolkit.c.user  # o el nombre de un usuario válido
+        }
+
+      
+        data_dict = {
+            'all_fields': True,   # Si quieres que traiga más datos
+            'include_extras': True
+        }
+
+        groups = toolkit.get_action('group_list')(context, data_dict)
+        log.info(f"[DataJsonView][get_consolidado_contador_grupos] groups: {groups}")
+
+        for group in groups:
+
+            busqueda_params = {
+                'q': '*:*',
+                'rows': registros,
+                'include_private': True,
+                'fq': f'+state:active AND groups:{group["name"]}'
+            }
+
+            log.info(f"[DataJsonView][get_consolidado_contador_grupos]  busqueda_params: { busqueda_params}")  
+            datasets = toolkit.get_action('package_search')(context,busqueda_params)
+            log.info(f"[DataJsonView][get_consolidado_contador_grupos] packages: {datasets['results']}")
+            resultados_totales.append(self.consolidado_contador(datasets['results'],None,group["name"]))
+           
+        log.info(f"[DataJsonView][get_consolidado_contador_grupos] resultados_totales: {resultados_totales}")    
+        return resultados_totales
+    
+
+    def get_consolidado_contador_dataset(self,context:Context,registros):
+
+        resultados_totales = []
+        context = {
+            'model': model,
+            'session': model.Session,
+            'user': toolkit.c.user  # o el nombre de un usuario válido
+        }
+
+
+        data_dict = {
+            'q': '*:*',
+            'rows': registros,
+            'include_private': True,
+            'fq':'+state:active'
+        }
+
+        resultado = toolkit.get_action('package_search')(context, data_dict)
+        datasets = resultado.get('results', [])
+        log.info(f"[get_consolidado_contador_dataset] dataset: {datasets}")
+
+        for dataset in datasets:
+            log.info(f"[DataJsonView][get_consolidado_contador_dataset] packages: {dataset}")
+            log.info(f"[DataJsonView][get_consolidado_contador_dataset] packages: {dataset['id']}-{dataset['name']}")
+            resultados_totales.append(self.get_consolidado_contador(dataset['id'],dataset['name']))
+           
+
+        return resultados_totales
+      
+
+    def consolidado_contador(self,packages, org_id=None,group_id=None):
+        """
+            Devuelve el consolidado de las vistas y descargas de los recursos.
+        """
+
+        log.info("[DataJsonView][consolidado_contador] ejecutado")
+    
+       
+        vistas=0
+        descargas=0
+
+        log.info(f"[DataJsonView][consolidado_contador] packages: {packages}")
+
+
+
+        #datasets=packages['results']
+
+        for package in  packages:
+            log.info(f"[consolidado_contador] package: {package}")
+            package_id=package['id']
+            rows = Session.query(Contador).filter(
+                    Contador.package_Id == package_id
+                ).all()
+
+            log.info(f"[DataJsonView][consolidado_contador] contadores {rows} en Dataset {package_id}")
+        
+            for row in rows:
+                vistas+=row.contVistas
+                descargas+=row.contDownload
+            
+        log.info(f"[DataJsonView][consolidado_contador] vistas {vistas} descargas {descargas}")
+        
+        if org_id==None:
+
+            return{
+                    "visualizaciones": vistas if vistas else 0,
+                    "descargas": descargas if descargas else 0,
+                    "group_id": group_id,
+                }
+    
+        else:
+            return{
+                    "visualizaciones": vistas if vistas else 0,
+                    "descargas": descargas if descargas else 0,
+                    "org_id": org_id,
+                }
+
+
+
+    def get_consolidado_contador(self,package_id,package_name): 
+                
+        """
+            Devuelve el consolidado de las vistas y descargas de los recursos.
+        """
+
+        log.info("[CSVtoGeoJSONPlugin] get_consolidado_contador ejecutado")
+    
+        session = model.Session
+
+        vistas=0
+        descargas=0
+
+        rows = Session.query(Contador).filter(
+                Contador.package_Id == package_id
+            ).all()
+
+       
+        for row in rows:
+            vistas+=row.contVistas
+            descargas+=row.contDownload
+            log.info(f"[CSVtoGeoJSONPlugin][get_consolidado_contador] vistas {vistas} descargas {descargas}")
+
+        
+        log.info(f"[CSVtoGeoJSONPlugin][get_consolidado_contador] registro {rows}")
+
+        return{
+                "visualizaciones": vistas if vistas else 0,
+                "descargas": descargas if descargas else 0,
+                "package_id": package_id,
+                "package_name": package_name,
+            }
+    
+    
+
+   
         
 
 class DataJsonAPI(SingletonPlugin):
@@ -823,6 +1020,7 @@ class DataJsonAPI(SingletonPlugin):
                 "descargas": descargas if descargas else 0,
                 "package_id": package_id,
             }
+    
     
 
     def get_extras(self,id):
