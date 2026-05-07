@@ -857,6 +857,8 @@ class DataJsonAPI(SingletonPlugin):
 
     def after_resource_update(self, context, resource):
         pass        
+        
+     
    
     def before_resource_delete(self,context: Context, resource: dict[str, Any], resources: list[dict[str, Any]]):
         pass
@@ -875,6 +877,10 @@ class DataJsonAPI(SingletonPlugin):
 
 
     #Eventos Dataset
+    
+    def after_dataset_update(self, context: Context, data_dict: dict[str, Any]):
+        # Tu lógica aquí
+        return data_dict
 
     def after_dataset_create(self,context: Context,  pkg_dict: dict[str, Any]):        
         return pkg_dict  
