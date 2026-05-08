@@ -55,13 +55,18 @@ class CSVtoGeoJSONPlugin(SingletonPlugin):
         # Procesar solo CSV
         if resource.get('format', '').lower() == 'csv':
 
+            name=resource.get('name', '')
+            base_name, ext = os.path.splitext(name)
+            
             # Obtener dataset completo
             package = tk.get_action('package_show')(context, {'id': resource['package_id']})
             
             
-            # Buscar recurso GeoJSON ya existente en el paquete
+            # 2. Buscar si existe el par .geojson en el paquete
             geojson_resource = next(
-                (r for r in package['resources'] if r.get('format', '').lower() == 'geojson'),
+                (r for r in package.get('resources', []) 
+                if r.get('name', '').lower().startswith(base_name.lower()) 
+                and r.get('name', '').lower().endswith('.geojson')),
                 None
             )
 

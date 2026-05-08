@@ -69,7 +69,7 @@ class GeoJSONConverter:
                     "geometry": mapping(Point(lon, lat)),
                     "properties": row
                 })
-                #log.warning("[GeoJSONConverter] convertir_a_geojson features detectar_columnas_coord %s",features)
+                log.warning("[GeoJSONConverter] convertir_a_geojson features detectar_columnas_coord %s",features)
             except (ValueError, TypeError):
                 log.error("[GeoJSONConverter] convertir_a_geojson ValueError detectar_columnas_coord %s",ValueError)
                 log.error("[GeoJSONConverter] convertir_a_geojson TypeError detectar_columnas_coord %s",TypeError)
@@ -91,7 +91,13 @@ class GeoJSONConverter:
             log.info("[GeoJSONConverter][convertir_csv_geojson] ejecutado")
             #log.info("[CSVtoGeoJSONPlugin] convertir_csv_geojson ejecutado para recurso CSV %s", resource_id)
 
-            context = {'ignore_auth': True}
+            context = {
+                'model': model,
+                'session': model.Session,
+                'user': 'opendata', # Usuario interno con superpoderes
+                'ignore_auth': True,
+                'api_version': 3
+            }
 
             storage_path = config.get("ckan.storage_path")
             
@@ -143,7 +149,7 @@ class GeoJSONConverter:
             # 6. Crear o actualizar recurso GeoJSON
             if geojson_id:
                 # Actualizar recurso existente
-                #log.info("[CSVtoGeoJSONPlugin] convertir_csv_geojson Actualizando recurso GeoJSON existente ID=%s", geojson_id)
+                log.info("[CSVtoGeoJSONPlugin] convertir_csv_geojson Actualizando recurso GeoJSON existente ID=%s", geojson_id)
                 update_data = {
                     'id': geojson_id,
                     'format': 'GeoJSON',
@@ -155,11 +161,11 @@ class GeoJSONConverter:
                 }
                 #log.warning("[GeoJSONConverter][convertir_csv_geojson] update_data = %s", update_data)   
                 response =  get_action('resource_update')(context, update_data)
-                #log.warning("[GeoJSONConverter][convertir_csv_geojson] response  = %s", response )   
+                log.warning("[GeoJSONConverter][convertir_csv_geojson] response  = %s", response )   
                 
             else:
                 # Crear recurso nuevo
-                #log.info("[CSVtoGeoJSONPlugin] convertir_csv_geojson Creando nuevo recurso GeoJSON para paquete %s", package_id)
+                log.info("[CSVtoGeoJSONPlugin] convertir_csv_geojson Creando nuevo recurso GeoJSON para paquete %s", package_id)
                 create_data = {
                     'package_id': package_id,
                     'name': f"{base_name} (GeoJSON)",
@@ -174,7 +180,7 @@ class GeoJSONConverter:
                     create_data['upload'] = f
                     #log.warning("[GeoJSONConverter][convertir_csv_geojson] create_data  = %s", create_data )  
                     response =  get_action('resource_create')(context, create_data)
-                    #log.warning("[GeoJSONConverter][convertir_csv_geojson] response  = %s", response )  
+                    log.warning("[GeoJSONConverter][convertir_csv_geojson] response  = %s", response )  
                     #log.info("[CSVtoGeoJSONPlugin] convertir_csv_geojson crear_recurso_geojson Recurso creado: %s", json.dumps(response, indent=2, ensure_ascii=False))
                     
             
@@ -206,11 +212,18 @@ class GeoJSONConverter:
             # 8. Limpiar archivo temporal
             shutil.rmtree(tmp_dir)
 
-            get_action("resource_view_create")(context, {
-                "resource_id": geojson_res_id,
-                "title": "GeoJson",
-                "view_type": "geojson_view"
-            })
+            # 1. Obtener la lista de vistas actuales del recurso
+            vistas = get_action("resource_view_list")(context, {"id": geojson_res_id})
+
+            # 2. Verificar si ya existe una de tipo 'geojson_view'
+            existe_vista = any(v.get('view_type') == 'geojson_view' for v in vistas)
+
+            if not existe_vista:
+                get_action("resource_view_create")(context, {
+                    "resource_id": geojson_res_id,
+                    "title": "GeoJson",
+                    "view_type": "geojson_view"
+                })
 
             
             #log.info("[CSVtoGeoJSONPlugin][convertir_csv_geojson] conversión a GeoJSON completada para %s", resource_id)
