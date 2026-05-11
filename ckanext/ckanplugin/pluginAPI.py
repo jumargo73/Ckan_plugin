@@ -4,7 +4,7 @@ from ckan.plugins import toolkit
 from ckan.common import config
 import ckan.model as model
 from ckan.model.resource import Resource  # ✅ Correcto import
-from ckanext.ckanplugin.model.contador import Contador ,
+from ckanext.ckanplugin.model.contador import Contador
 from ckanext.ckanplugin.model.resourceRating import ResourceRating 
 import ckanext.ckanplugin.logic.action.resourceRating as rating_action
 import ckanext.ckanplugin.logic.auth.resourceRating as rating_auth
