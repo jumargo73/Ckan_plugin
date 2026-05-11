@@ -4,7 +4,10 @@ from ckan.plugins import toolkit
 from ckan.common import config
 import ckan.model as model
 from ckan.model.resource import Resource  # ✅ Correcto import
-from ckanext.ckanplugin.model.contador import Contador
+from ckanext.ckanplugin.model.contador import Contador ,
+from ckanext.ckanplugin.model.resourceRating import ResourceRating 
+import ckanext.ckanplugin.logic.action.resourceRating as rating_action
+import ckanext.ckanplugin.logic.auth.resourceRating as rating_auth
 from model import Session
 from flask import Blueprint, jsonify, redirect, request, Response
 from ckan.types import Context 
@@ -290,6 +293,7 @@ class DataJsonView(SingletonPlugin):
 
                             data_dataset['distribucion']=[]
                             data_dataset['tema']=[]
+                            data_dataset['calificacion']=[]
 
                             contador=latest_resource.get('contador') 
                             #log.warning(f"[PliginApi][powerBI] contador: {contador}")
@@ -297,6 +301,8 @@ class DataJsonView(SingletonPlugin):
                             #log.warning(f"[PliginApi][powerBI] estructura: {estructura}")
                             data_extras=latest_resource.get('data_extra')    
                             #log.warning(f"[PliginApi][powerBI] data_extras: {data_extras}")
+                            calificacion=latest_resource.get('calificacion')
+                            data_dataset['calificacion'].append(calificacion)
 
                             data_resource= {
                                 "@type": "dcat:Distribution",
@@ -931,11 +937,13 @@ class DataJsonAPI(SingletonPlugin):
                 package_id=dataset.get('id') if dataset else ''
 
                 consolidado=self.get_consolidado_contador(package_id)
+                calificacion=self.get_calificacion_dataset(context,package_id)
 
                 dataset['consolidado']=consolidado if consolidado else {}
+                dataset['calificacion']=calificacion if calificacion else {}
 
                 log.info(f"[CSVtoGeoJSONPlugin] after_dataset_search package['id']= {package_id} consolidado {consolidado}")
-               
+                log.info(f"[CSVtoGeoJSONPlugin] after_dataset_search package['id']= {package_id} consolidado {calificacion}")
                 for resource in dataset.get('resources', []):
                     #log.info(f"[CSVtoGeoJSONPlugin] after_dataset_search resource['id']= {resource['id']}")
                     rid = resource.get('id')
@@ -1108,6 +1116,20 @@ class DataJsonAPI(SingletonPlugin):
             ]
 
 
+    def get_calificacion_dataset(self,id,context):
+        try:
+            data_dict =  toolkit.get_action('package_show')(context,{'id': id})
+            rating=rating_action.resource_rating_get(context, data_dict)
+            log.error(f"[CSVtoGeoJSONPlugin][get_calificacion_dataset] get_calification con id {rating}")
+        except Exception as e:
+            log.error(f"[CSVtoGeoJSONPlugin][get_calificacion_dataset] get_calification con id {id} error={e}")
+            return {
+                'resource_id': id,
+                'average': 0.0,
+                'count': 0,
+                'user-rating':None
+            }
+            
     def get_filas_columnas(self,id,context):
         try:
             #log.info("[CSVtoGeoJSONPlugin] get_filas_columnas ejecutado")
